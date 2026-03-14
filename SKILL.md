@@ -3,13 +3,14 @@
 ## 백엔드 스킬
 
 ### Spring Boot
-- Spring Boot 4.0.3 사용
-- Auto Configuration, Profile 기반 설정 관리
+- Spring Boot 4.0.3 사용 (Spring Framework 7.x, Gradle 8.14+ 필요)
+- Auto Configuration, Profile 기반 설정 관리 (local/dev/prod)
 - `application.yml`에서 증권사별 API URL/엔드포인트 외부화
 - RestTemplate / WebClient를 통한 외부 API 호출
 
-### Java 25+
-- Record 클래스 활용 (DTO)
+### Java 21
+- Record 클래스 활용 (DTO — `ApiResponse<T>`, `ErrorResponse`)
+  - record 필드명과 동일한 정적 메서드명 사용 불가 → `ok()`/`fail()`로 명명
 - Sealed 클래스 / Pattern Matching
 - Virtual Threads (Project Loom) 활용 가능
 
@@ -29,9 +30,11 @@
 - 서비스 레이어에서 계좌 소유권 검증 (`account.userId == currentUser.id`)
 
 ### 보안 / 암호화
-- AES-256 대칭키 암호화 (app-key, secret-key 저장)
-- 암호화 키는 환경변수 또는 외부 설정으로 관리
-- 화면 출력 시 마스킹 처리 (`****abcd` 형태)
+- AES-256-GCM 인증 암호화 (app-key, secret-key 저장)
+  - `AesEncryptionUtil` (@Component): SHA-256으로 키→32바이트 변환, 랜덤 12바이트 IV, IV+암호문을 Base64 인코딩
+  - GCM은 변조 감지 기능 내장 (CBC 대비 보안 우위)
+- 암호화 키는 환경변수 또는 `application.yml`의 `encryption.aes.secret-key`로 관리
+- 화면 출력 시 마스킹 처리: `MaskingUtil.maskKey()` (앞 4자리 + `****`), `maskAccountNumber()` (앞4+뒤2, 중간 마스킹)
 - 사용자 비밀번호: BCrypt 해시 (평문 저장 금지)
 
 ### OAuth2 / API 인증
@@ -62,8 +65,9 @@
 - API 서비스 모듈화 (`services/api.ts`, `services/accountApi.ts` 등)
 
 ### 상태 관리
-- React Context 또는 Zustand로 전역 상태 관리 (인증 정보, 선택된 증권사/계좌)
-- 로그인/비로그인 상태별 메뉴 분기
+- Zustand로 전역 상태 관리 (`authStore.ts` — accessToken, refreshToken, isAuthenticated)
+- localStorage와 자동 동기화 (`setTokens()`, `clearTokens()`)
+- 로그인/비로그인 상태별 메뉴 분기 (ProtectedRoute → Layout 중첩 구조)
 
 ### SSE 클라이언트
 - `EventSource` API로 실시간 시세 수신

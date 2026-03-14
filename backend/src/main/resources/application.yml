@@ -1,0 +1,57 @@
+spring:
+  profiles:
+    default: local
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/stockdb
+    username: stockuser
+    password: stockpass
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+server:
+  port: 8080
+
+# JWT
+jwt:
+  secret: ${JWT_SECRET:my-super-secret-jwt-key-for-development-only-change-in-production}
+  access-token-expiration: 1800000    # 30분 (ms)
+  refresh-token-expiration: 604800000 # 7일 (ms)
+
+# AES Encryption
+encryption:
+  aes:
+    secret-key: ${AES_SECRET_KEY:my-aes-256-secret-key-for-dev-only}
+
+# Broker API
+broker:
+  kis:
+    base-url: https://openapivts.koreainvestment.com:29443
+    token-path: /oauth2/tokenP
+    balance-path: /uapi/domestic-stock/v1/trading/inquire-balance
+    price-path: /uapi/domestic-stock/v1/quotations/inquire-price
+  kiwoom:
+    base-url: https://openapi.kiwoom.com
+    token-path: /oauth2/token
+    balance-path: /api/dostk/acntbal
+    price-path: /api/dostk/stkcur
+  ls:
+    base-url: https://openapi.ls-sec.co.kr
+    token-path: /oauth2/token
+    balance-path: /stock/accno
+    price-path: /stock/cur-price
+
+# SpringDoc
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs

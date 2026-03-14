@@ -5,24 +5,25 @@
 
 ## 기술 스택
 
-### Back-end
-- **Java**: 25+
+### Back-end (`backend/`)
+- **Java**: 21 (Zulu OpenJDK 21)
 - **Framework**: Spring Boot 4.0.3
-- **Build Tool**: Gradle
+- **Build Tool**: Gradle 8.14 (Kotlin DSL)
 - **ORM**: Spring Data JPA
-- **Database**: PostgreSQL (Docker 컨테이너, 데이터 volume 마운트)
+- **Database**: PostgreSQL 17 (Docker 컨테이너, 데이터 volume 마운트)
 - **Lombok**: 사용
-- **API 문서**: SpringDoc OpenAPI (Swagger UI)
-- **인증/보안**: Spring Security + JWT (Access Token / Refresh Token)
+- **API 문서**: SpringDoc OpenAPI 2.8.6 (Swagger UI)
+- **인증/보안**: Spring Security + JWT (Access Token / Refresh Token, jjwt 0.12.6)
+- **암호화**: AES-256-GCM (AesEncryptionUtil)
 
-### Front-end
+### Front-end (`frontend/`)
 - **Framework**: React (Vite 기반, TypeScript)
-- **상태 관리**: React Context 또는 Zustand
-- **HTTP 클라이언트**: Axios (JWT 인터셉터)
+- **상태 관리**: Zustand
+- **HTTP 클라이언트**: Axios (JWT 인터셉터 — 401 시 자동 토큰 갱신)
 - **라우팅**: React Router v7
 
 ### Infrastructure
-- **DB**: Docker Compose로 PostgreSQL 실행, volume으로 데이터 영속화
+- **DB**: Docker Compose로 PostgreSQL 17 실행, Named volume `pgdata`로 데이터 영속화
 
 ## 지원 증권사 및 API
 | 증권사 | API 문서 URL |
@@ -54,18 +55,53 @@
 
 ## 코딩 컨벤션
 
+### 프로젝트 구조 (모노레포)
+```
+stock-account/
+├── backend/                 # Spring Boot 백엔드
+│   ├── src/main/java/com/stock/account/
+│   │   ├── config/          # SecurityConfig, SwaggerConfig
+│   │   ├── common/          # dto, exception, util
+│   │   ├── controller/      # REST 컨트롤러
+│   │   ├── service/         # 비즈니스 로직
+│   │   ├── repository/      # JPA 리포지토리
+│   │   ├── domain/          # 엔티티
+│   │   ├── dto/             # 요청/응답 DTO
+│   │   └── security/        # JWT 필터 등
+│   ├── src/main/resources/  # application.yml (local/dev/prod)
+│   ├── build.gradle.kts
+│   └── gradlew
+├── frontend/                # Vite + React + TypeScript
+│   ├── src/
+│   │   ├── components/      # layout/, common/
+│   │   ├── pages/           # 각 화면 컴포넌트
+│   │   ├── services/        # api.ts (Axios 인스턴스)
+│   │   ├── store/           # authStore.ts (Zustand)
+│   │   └── types/           # 공통 타입 정의
+│   ├── package.json
+│   └── vite.config.ts       # /api → localhost:8080 프록시
+├── docker-compose.yml       # PostgreSQL 17
+└── CLAUDE.md
+```
+
 ### Back-end
 - 패키지 구조: `com.stock.account`
 - 계층 구조: `controller` / `service` / `repository` / `domain` / `dto` / `config` / `common` / `security`
+- 공통 응답: `ApiResponse<T>` (record) — `ApiResponse.ok(data)`, `ApiResponse.fail(code, message)`
+- 예외 처리: `ErrorCode` enum + `BusinessException` + `GlobalExceptionHandler`
+- 암호화: `AesEncryptionUtil` (AES-256-GCM, SHA-256으로 키 변환, 랜덤 IV)
+- 마스킹: `MaskingUtil.maskKey()`, `MaskingUtil.maskAccountNumber()`
 - 증권사별 구현은 Strategy 패턴 또는 별도 패키지로 분리
-- 테스트: JUnit 5 + Mockito, 통합 테스트 시 @SpringBootTest
+- 테스트: JUnit 5 + Mockito, 통합 테스트 시 @SpringBootTest, 테스트 DB는 H2 인메모리
 - REST API 경로: `/api/v1/...`
 - 설정 파일: `application.yml` (profile 분리: local, dev, prod)
 
 ### Front-end
 - 디렉토리: `frontend/` (Vite + React + TypeScript)
 - 컴포넌트 구조: `pages/` / `components/` / `hooks/` / `services/` / `store/` / `types/`
-- API 호출: `services/api.ts` (Axios 인스턴스, JWT 인터셉터)
+- API 호출: `services/api.ts` (Axios 인스턴스, JWT 인터셉터 — 401 시 자동 refreshToken 갱신)
+- 인증 상태: `store/authStore.ts` (Zustand, localStorage 동기화)
+- 라우팅: `ProtectedRoute` → `Layout` → 페이지 중첩 구조
 - 테스트: Vitest + React Testing Library
 
 ## 보안 주의사항
@@ -73,7 +109,7 @@
 - JWT Access Token: 짧은 만료 (15~30분), Authorization 헤더로 전송
 - JWT Refresh Token: 긴 만료 (7일), HttpOnly 쿠키 또는 별도 저장
 - app-key, secret-key 등 민감 정보는 절대 평문 저장 금지
-- AES-256 등으로 암호화 후 DB 저장
+- AES-256-GCM으로 암호화 후 DB 저장 (인증 암호화 — 변조 감지)
 - 화면 노출 시 앞 4자리만 표시하고 나머지는 `****`로 마스킹
 - `.env` 파일이나 credential 파일은 `.gitignore`에 반드시 포함
 - 타인의 계좌에 접근 불가하도록 서비스 레이어에서 소유권 검증 필수

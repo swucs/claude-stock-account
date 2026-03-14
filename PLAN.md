@@ -1,19 +1,25 @@
 # PLAN.md - 구현 계획
 
-## Phase 0: 프로젝트 초기 설정
-- [ ] **Back-end**: Spring Boot 4.0.3 프로젝트 생성 (Gradle, Java 25+)
-- [ ] 의존성 설정 (Spring Web, JPA, PostgreSQL, Lombok, Spring Security, jjwt 등)
-- [ ] Docker Compose 파일 작성 (PostgreSQL + volume)
-- [ ] `application.yml` 기본 구성 (DB 연결, JWT 설정, 증권사 API URL/엔드포인트)
-- [ ] 공통 패키지 구조 생성
-- [ ] 암호화 유틸 클래스 구현 (AES-256)
-- [ ] 공통 예외 처리 (GlobalExceptionHandler)
-- [ ] SpringDoc OpenAPI (Swagger UI) 설정
-- [ ] CORS 설정 (React 개발 서버 허용)
-- [ ] **Front-end**: Vite + React + TypeScript 프로젝트 생성 (`frontend/`)
-- [ ] Axios 인스턴스 설정 (JWT 인터셉터, 토큰 갱신 로직)
-- [ ] React Router 설정 (ProtectedRoute 포함)
-- [ ] 공통 레이아웃 컴포넌트 (Header, Sidebar, Layout)
+## Phase 0: 프로젝트 초기 설정 ✅ (2026-03-14 완료)
+- [x] **Back-end**: Spring Boot 4.0.3 프로젝트 생성 (`backend/`, Gradle 8.14 Kotlin DSL, Java 21)
+- [x] 의존성 설정 (Spring Web, JPA, PostgreSQL, Lombok, Spring Security, jjwt 0.12.6, springdoc 2.8.6)
+- [x] Docker Compose 파일 작성 (PostgreSQL 17 + named volume `pgdata`)
+- [x] `application.yml` 기본 구성 (DB 연결, JWT 설정, 증권사 API URL/엔드포인트, AES 키)
+- [x] 공통 패키지 구조 생성 (`config`, `common/{dto,exception,util}`, `controller`, `service`, `repository`, `domain`, `dto`, `security`)
+- [x] 암호화 유틸 클래스 구현 (AES-256-GCM + TDD 테스트 6개)
+- [x] 마스킹 유틸 구현 (`MaskingUtil.maskKey()`, `maskAccountNumber()`)
+- [x] 공통 응답 DTO (`ApiResponse<T>` record — `ok()`/`fail()` 팩토리 메서드)
+- [x] 공통 예외 처리 (`ErrorCode` enum, `BusinessException`, `GlobalExceptionHandler`)
+- [x] SpringDoc OpenAPI (Swagger UI) 설정 (`SwaggerConfig` — Bearer JWT SecurityScheme)
+- [x] Spring Security 설정 (`SecurityConfig` — CORS, CSRF 비활성화, Stateless, BCrypt)
+- [x] **Front-end**: Vite + React + TypeScript 프로젝트 생성 (`frontend/`)
+- [x] Axios 인스턴스 설정 (JWT 인터셉터, 401 시 refreshToken 자동 갱신)
+- [x] Zustand 인증 스토어 (`authStore.ts` — localStorage 동기화)
+- [x] React Router 설정 (ProtectedRoute + Layout 중첩 라우팅)
+- [x] 공통 레이아웃 컴포넌트 (Header, Sidebar, Layout)
+- [x] Placeholder 페이지 6개 (Login, Signup, Dashboard, Balance, Price, Accounts)
+
+> **참고**: Java 25가 아닌 Java 21 사용 (로컬 환경). Spring Boot 4.0.3이 Gradle 8.14+를 요구하여 8.12→8.14로 변경.
 
 ## Phase 1: 사용자 인증 (JWT 기반)
 - [ ] **Entity 설계**
