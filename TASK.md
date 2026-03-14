@@ -50,7 +50,6 @@
 - [ ] BrokerApiClient 인터페이스 정의
 - [ ] KisApiClient 구현 (인증)
 - [ ] KisApiClient 구현 (잔고 조회 + 30초 자동 갱신 API)
-- [ ] KisApiClient 구현 (거래내역 조회)
 - [ ] KisApiClient 구현 (실시간 시세 - SSE / SseEmitter)
 - [ ] 조회 화면 구현 (React: 증권사 선택 → 계좌 선택 → 조회)
 - [ ] 잔고 조회 30초 자동 갱신 구현 (useEffect + Axios polling, ON/OFF 토글)
@@ -59,13 +58,13 @@
 ## Phase 4: 키움
 - [ ] 키움 API 문서 분석 및 정리
 - [ ] KiwoomApiClient 구현 (인증)
-- [ ] KiwoomApiClient 구현 (잔고(30초 갱신)/거래내역/실시간시세)
+- [ ] KiwoomApiClient 구현 (잔고(30초 갱신)/실시간시세)
 - [ ] 키움 관련 테스트 작성
 
 ## Phase 5: LS증권
 - [ ] LS API 문서 분석 및 정리
 - [ ] LsApiClient 구현 (인증)
-- [ ] LsApiClient 구현 (잔고(30초 갱신)/거래내역/실시간시세)
+- [ ] LsApiClient 구현 (잔고(30초 갱신)/실시간시세)
 - [ ] LS 관련 테스트 작성
 
 ## Phase 6: 통합 및 마무리

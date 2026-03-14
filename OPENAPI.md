@@ -179,6 +179,7 @@ PUT /api/v1/users/me
 GET /api/v1/accounts
 ```
 **Query Parameters**
+
 | 파라미터 | 타입 | 필수 | 설명 |
 |----------|------|------|------|
 | brokerType | String | N | 증권사 필터 (KIS, KIWOOM, LS) |
@@ -208,6 +209,7 @@ GET /api/v1/accounts
 GET /api/v1/accounts/{accountId}
 ```
 **Path Parameters**
+
 | 파라미터 | 타입 | 설명 |
 |----------|------|------|
 | accountId | Long | 계좌 ID |
@@ -326,6 +328,7 @@ GET /api/v1/brokers
 GET /api/v1/brokers/{brokerType}/accounts
 ```
 **Path Parameters**
+
 | 파라미터 | 타입 | 설명 |
 |----------|------|------|
 | brokerType | String | 증권사 코드 (KIS, KIWOOM, LS) |
@@ -370,6 +373,7 @@ GET /api/v1/accounts/{accountId}/balance
 > 30초 자동 갱신 시 이 API를 Axios로 polling (Authorization 헤더에 JWT 포함)
 
 **Path Parameters**
+
 | 파라미터 | 타입 | 설명 |
 |----------|------|------|
 | accountId | Long | 계좌 ID |
@@ -414,58 +418,9 @@ GET /api/v1/accounts/{accountId}/balance
 
 ---
 
-## 4. 거래내역 조회 API
+## 4. 실시간 시세 API
 
-### 4.1 거래내역 조회
-```
-GET /api/v1/accounts/{accountId}/transactions
-```
-**Path Parameters**
-| 파라미터 | 타입 | 설명 |
-|----------|------|------|
-| accountId | Long | 계좌 ID |
-
-**Query Parameters**
-| 파라미터 | 타입 | 필수 | 설명 |
-|----------|------|------|------|
-| startDate | String | Y | 조회 시작일 (yyyy-MM-dd) |
-| endDate | String | Y | 조회 종료일 (yyyy-MM-dd) |
-| tradeType | String | N | 거래 유형 (BUY, SELL, ALL). 기본값: ALL |
-| page | Integer | N | 페이지 번호. 기본값: 0 |
-| size | Integer | N | 페이지 크기. 기본값: 20 |
-
-**Response 200**
-```json
-{
-  "success": true,
-  "data": {
-    "content": [
-      {
-        "transactionDate": "2026-03-13",
-        "transactionTime": "09:31:25",
-        "stockCode": "005930",
-        "stockName": "삼성전자",
-        "tradeType": "BUY",
-        "quantity": 50,
-        "price": 72000,
-        "totalAmount": 3600000,
-        "fee": 3600,
-        "tax": 0
-      }
-    ],
-    "page": 0,
-    "size": 20,
-    "totalElements": 45,
-    "totalPages": 3
-  }
-}
-```
-
----
-
-## 5. 실시간 시세 API
-
-### 5.1 실시간 시세 스트리밍 (SSE)
+### 4.1 실시간 시세 스트리밍 (SSE)
 ```
 GET /api/v1/stocks/price/stream
 ```
@@ -473,6 +428,7 @@ GET /api/v1/stocks/price/stream
 > 브라우저 `EventSource` API로 연결, 자동 재연결 지원
 
 **Query Parameters**
+
 | 파라미터 | 타입 | 필수 | 설명 |
 |----------|------|------|------|
 | stockCodes | String | Y | 종목 코드 (쉼표 구분, e.g. `005930,000660`) |
@@ -506,11 +462,12 @@ source.onerror = () => {
 return () => source.close();
 ```
 
-### 5.2 현재가 단건 조회 (REST)
+### 4.2 현재가 단건 조회 (REST)
 ```
 GET /api/v1/stocks/{stockCode}/price
 ```
 **Query Parameters**
+
 | 파라미터 | 타입 | 필수 | 설명 |
 |----------|------|------|------|
 | brokerType | String | Y | 시세 조회할 증권사 |
@@ -564,5 +521,4 @@ springdoc:
 | Account | 계좌 관리 (CRUD, 로그인 필수) |
 | Broker | 증권사 정보 |
 | Balance | 잔고 조회 (30초 polling, 로그인 필수) |
-| Transaction | 거래내역 조회 (로그인 필수) |
 | Price | 시세 조회 (REST + SSE, 로그인 필수) |

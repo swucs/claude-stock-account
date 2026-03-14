@@ -44,9 +44,8 @@
 > 상세 API 스펙: [BROKER-API.md](BROKER-API.md) 섹션 1 참조
 - [ ] **인증**: `POST /oauth2/tokenP` — OAuth2 토큰 발급/갱신 (24시간 유효)
 - [ ] **잔고 조회**: `GET /uapi/.../inquire-balance` (tr_id: `TTTC8434R`) → 응답 매핑 → 화면 (30초 자동 갱신)
-- [ ] **거래내역 조회**: `GET /uapi/.../inquire-daily-ccld` (tr_id: `TTTC8001R`) → 응답 매핑 → 화면
 - [ ] **실시간 시세**: `GET /uapi/.../inquire-price` (tr_id: `FHKST01010100`) → SseEmitter 스트리밍
-- [ ] **React 화면**: 증권사 선택 → 계좌 선택 → 기능별 탭 (잔고/거래/시세)
+- [ ] **React 화면**: 증권사 선택 → 계좌 선택 → 기능별 탭 (잔고/시세)
 - [ ] **자동 갱신**: 잔고 조회 30초 polling (useEffect + Axios, 갱신 ON/OFF 토글)
 - [ ] **테스트**: Mock API 기반 단위 테스트, WireMock 통합 테스트
 
@@ -54,7 +53,6 @@
 > 상세 API 스펙: [BROKER-API.md](BROKER-API.md) 섹션 2 참조
 - [ ] **인증**: `POST /oauth2/token` — OAuth2 토큰 발급
 - [ ] **잔고 조회**: `GET /api/dostk/acnt` (tr_id: `TTTC8434R`) → 응답 매핑
-- [ ] **거래내역 조회**: `GET /api/dostk/ord` (tr_id: `TTTC8001R`) → 응답 매핑
 - [ ] **실시간 시세**: `GET /api/dostk/mrkt` (tr_id: `FHKST01010100`) → SseEmitter 스트리밍
 - [ ] 테스트 작성
 
@@ -62,7 +60,6 @@
 > 상세 API 스펙: [BROKER-API.md](BROKER-API.md) 섹션 3 참조
 - [ ] **인증**: `POST /oauth2/token` — OAuth2 토큰 발급 (appkey + appsecretkey + scope)
 - [ ] **잔고 조회**: `POST /stock/accno` (tr_cd: `t0424`) → 응답 매핑
-- [ ] **거래내역 조회**: `POST /stock/accno` (tr_cd: `CSPAQ13700`) → 응답 매핑
 - [ ] **실시간 시세**: `POST /stock/market-data` (tr_cd: `t1102`) → SseEmitter 스트리밍
 - [ ] 테스트 작성
 
@@ -111,7 +108,6 @@
 public interface BrokerApiClient {
     TokenResponse authenticate(Account account);
     BalanceResponse getBalance(Account account, String token);
-    List<TransactionResponse> getTransactions(Account account, String token, LocalDate from, LocalDate to);
     void streamRealTimePrice(Account account, String token, List<String> stockCodes, SseEmitter emitter);
 }
 
