@@ -1,0 +1,22 @@
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Gradle
+.gradle/
+build/
+
+# Node / React
+frontend/node_modules/
+frontend/dist/
+
+# Environment
+.env
+.env.local
+*.credentials
+
+# OS
+.DS_Store
+Thumbs.db
