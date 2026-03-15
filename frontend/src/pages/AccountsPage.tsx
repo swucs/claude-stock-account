@@ -22,6 +22,7 @@ export default function AccountsPage() {
 
   // 수정 폼 상태
   const [editData, setEditData] = useState({
+    accountNumber: '',
     accountName: '',
     appKey: '',
     secretKey: '',
@@ -64,7 +65,7 @@ export default function AccountsPage() {
 
   const handleEditStart = (account: Account) => {
     setEditingAccount(account);
-    setEditData({ accountName: account.accountName || '', appKey: '', secretKey: '' });
+    setEditData({ accountNumber: account.accountNumber || '', accountName: account.accountName || '', appKey: '', secretKey: '' });
     setFormError(null);
   };
 
@@ -72,6 +73,7 @@ export default function AccountsPage() {
     if (!editingAccount) return;
     setFormError(null);
     const updateData: AccountUpdateRequest = {};
+    if (editData.accountNumber) updateData.accountNumber = editData.accountNumber;
     if (editData.accountName) updateData.accountName = editData.accountName;
     if (editData.appKey) updateData.appKey = editData.appKey;
     if (editData.secretKey) updateData.secretKey = editData.secretKey;
@@ -256,6 +258,15 @@ export default function AccountsPage() {
           )}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             <div>
+              <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px', color: '#666' }}>계좌번호</label>
+              <input
+                style={inputStyle}
+                placeholder="예: 50123456-01"
+                value={editData.accountNumber}
+                onChange={(e) => setEditData({ ...editData, accountNumber: e.target.value })}
+              />
+            </div>
+            <div>
               <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px', color: '#666' }}>계좌명</label>
               <input
                 style={inputStyle}
@@ -263,23 +274,22 @@ export default function AccountsPage() {
                 onChange={(e) => setEditData({ ...editData, accountName: e.target.value })}
               />
             </div>
-            <div />
             <div>
-              <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px', color: '#666' }}>새 App Key (변경 시에만 입력)</label>
+              <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px', color: '#666' }}>App Key <span style={{ color: '#999', fontWeight: 'normal' }}>(미입력 시 기존 키 유지)</span></label>
               <input
                 style={inputStyle}
                 type="password"
-                placeholder="변경할 App Key"
+                placeholder="변경할 App Key 입력"
                 value={editData.appKey}
                 onChange={(e) => setEditData({ ...editData, appKey: e.target.value })}
               />
             </div>
             <div>
-              <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px', color: '#666' }}>새 Secret Key (변경 시에만 입력)</label>
+              <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px', color: '#666' }}>Secret Key <span style={{ color: '#999', fontWeight: 'normal' }}>(미입력 시 기존 키 유지)</span></label>
               <input
                 style={inputStyle}
                 type="password"
-                placeholder="변경할 Secret Key"
+                placeholder="변경할 Secret Key 입력"
                 value={editData.secretKey}
                 onChange={(e) => setEditData({ ...editData, secretKey: e.target.value })}
               />

@@ -62,7 +62,10 @@ public class Account {
         this.updatedAt = LocalDateTime.now();
     }
 
-    public void update(String accountName, String appKey, String secretKey, String additionalInfo) {
+    public void update(String accountNumber, String accountName, String appKey, String secretKey, String additionalInfo) {
+        if (accountNumber != null) {
+            this.accountNumber = accountNumber;
+        }
         if (accountName != null) {
             this.accountName = accountName;
         }

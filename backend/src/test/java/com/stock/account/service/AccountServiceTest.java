@@ -62,7 +62,7 @@ class AccountServiceTest {
         // 마스킹 확인
         assertThat(response.appKey()).isEqualTo("PSxq****");
         assertThat(response.secretKey()).isEqualTo("HgT2****");
-        assertThat(response.accountNumber()).isEqualTo("5012*****01");
+        assertThat(response.accountNumber()).isEqualTo("50123456-01");
     }
 
     @Test
@@ -144,7 +144,7 @@ class AccountServiceTest {
         AccountResponse created = accountService.createAccount(userId, createRequest());
 
         AccountUpdateRequest updateRequest = new AccountUpdateRequest(
-                "수정된 계좌명", "NewAppKey1234", null, null);
+                null, "수정된 계좌명", "NewAppKey1234", null, null);
 
         AccountResponse response = accountService.updateAccount(created.id(), userId, updateRequest);
 
@@ -160,7 +160,7 @@ class AccountServiceTest {
         UserResponse otherUser = userService.signup(
                 new SignupRequest("other2@example.com", "password123!", "다른사용자2"));
 
-        AccountUpdateRequest updateRequest = new AccountUpdateRequest("해킹", null, null, null);
+        AccountUpdateRequest updateRequest = new AccountUpdateRequest(null, "해킹", null, null, null);
 
         assertThatThrownBy(() -> accountService.updateAccount(created.id(), otherUser.id(), updateRequest))
                 .isInstanceOf(BusinessException.class)

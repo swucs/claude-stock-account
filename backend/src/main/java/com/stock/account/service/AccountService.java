@@ -72,7 +72,7 @@ public class AccountService {
         String encryptedSecretKey = request.secretKey() != null
                 ? aesEncryptionUtil.encrypt(request.secretKey()) : null;
 
-        account.update(request.accountName(), encryptedAppKey, encryptedSecretKey, request.additionalInfo());
+        account.update(request.accountNumber(), request.accountName(), encryptedAppKey, encryptedSecretKey, request.additionalInfo());
 
         return toMaskedResponse(account);
     }
@@ -102,7 +102,7 @@ public class AccountService {
                 account.getId(),
                 account.getBrokerType(),
                 account.getBrokerType().getDisplayName(),
-                MaskingUtil.maskAccountNumber(account.getAccountNumber()),
+                account.getAccountNumber(),
                 account.getAccountName(),
                 MaskingUtil.maskKey(decryptedAppKey),
                 MaskingUtil.maskKey(decryptedSecretKey),

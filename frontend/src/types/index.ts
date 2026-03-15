@@ -49,6 +49,7 @@ export interface AccountCreateRequest {
 }
 
 export interface AccountUpdateRequest {
+  accountNumber?: string;
   accountName?: string;
   appKey?: string;
   secretKey?: string;

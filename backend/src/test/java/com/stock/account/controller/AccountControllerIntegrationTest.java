@@ -80,7 +80,7 @@ class AccountControllerIntegrationTest {
                 .andExpect(jsonPath("$.data.accountName").value("한투 계좌"))
                 .andExpect(jsonPath("$.data.appKey").value("PSxq****"))
                 .andExpect(jsonPath("$.data.secretKey").value("HgT2****"))
-                .andExpect(jsonPath("$.data.accountNumber").value("5012*****01"));
+                .andExpect(jsonPath("$.data.accountNumber").value("50123456-01"));
     }
 
     @Test
@@ -174,7 +174,7 @@ class AccountControllerIntegrationTest {
                 .path("data").path("id").asLong();
 
         AccountUpdateRequest updateRequest = new AccountUpdateRequest(
-                "수정된 계좌명", "NewAppKey1234", null, null);
+                null, "수정된 계좌명", "NewAppKey1234", null, null);
 
         mockMvc.perform(put("/api/v1/accounts/" + accountId)
                         .header("Authorization", "Bearer " + accessToken)
