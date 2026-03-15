@@ -9,6 +9,8 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:8080',
         changeOrigin: true,
+        timeout: 300000,       // 5분 — SSE 스트림 끊김 방지
+        proxyTimeout: 300000,  // 5분
       },
     },
   },

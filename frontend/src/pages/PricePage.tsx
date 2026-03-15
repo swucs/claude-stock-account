@@ -15,6 +15,7 @@ export default function PricePage() {
   const [selectedAccountId, setSelectedAccountId] = useState<number | null>(null);
   const [stockCodes, setStockCodes] = useState<string[]>([]);
   const [stockNameMap, setStockNameMap] = useState<Record<string, string>>({});
+  const [stockCodesLoading, setStockCodesLoading] = useState(false);
   const [prices, setPrices] = useState<Map<string, StockPriceResponse>>(new Map());
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected');
   const [error, setError] = useState<string | null>(null);
@@ -32,6 +33,7 @@ export default function PricePage() {
   // 계좌 선택 시 보유종목 코드 조회
   const loadStockCodes = useCallback(async () => {
     if (!selectedAccountId) return;
+    setStockCodesLoading(true);
     try {
       const result = await balanceService.getBalance(selectedAccountId);
       if (result.success && result.data) {
@@ -45,6 +47,8 @@ export default function PricePage() {
       }
     } catch {
       setError('보유종목 조회에 실패했습니다.');
+    } finally {
+      setStockCodesLoading(false);
     }
   }, [selectedAccountId]);
 
@@ -153,6 +157,7 @@ export default function PricePage() {
     setSelectedAccountId(accountId);
     stopStream();
     setPrices(new Map());
+    setStockCodes([]);
     setStockNameMap({});
   };
 
@@ -357,6 +362,10 @@ export default function PricePage() {
             ))}
           </tbody>
         </table>
+      ) : selectedAccountId && stockCodesLoading ? (
+        <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>
+          <p>보유종목 조회 중...</p>
+        </div>
       ) : selectedAccountId && stockCodes.length > 0 ? (
         <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>
           <p>"시세 연결" 버튼을 누르면 실시간 시세를 확인할 수 있습니다.</p>
