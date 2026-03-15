@@ -10,6 +10,7 @@ import com.stock.account.common.exception.ErrorCode;
 import com.stock.account.domain.Account;
 import com.stock.account.domain.BrokerType;
 import com.stock.account.repository.AccountRepository;
+import com.stock.account.service.impl.BalanceServiceImpl;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,7 +37,7 @@ class BalanceServiceTest {
     private AccountRepository accountRepository;
 
     @InjectMocks
-    private BalanceService balanceService;
+    private BalanceServiceImpl balanceService;
 
     @Test
     @DisplayName("잔고 조회 성공")

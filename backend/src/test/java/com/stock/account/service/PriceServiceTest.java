@@ -1,6 +1,5 @@
 package com.stock.account.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.stock.account.broker.BrokerApiClient;
 import com.stock.account.broker.BrokerApiClientFactory;
 import com.stock.account.broker.dto.BrokerTokenResponse;
@@ -10,6 +9,7 @@ import com.stock.account.common.exception.ErrorCode;
 import com.stock.account.domain.Account;
 import com.stock.account.domain.BrokerType;
 import com.stock.account.repository.AccountRepository;
+import com.stock.account.service.impl.PriceServiceImpl;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,11 +36,8 @@ class PriceServiceTest {
     @Mock
     private AccountRepository accountRepository;
 
-    @Mock
-    private ObjectMapper objectMapper;
-
     @InjectMocks
-    private PriceService priceService;
+    private PriceServiceImpl priceService;
 
     @Test
     @DisplayName("단일 종목 현재가 조회 성공")
