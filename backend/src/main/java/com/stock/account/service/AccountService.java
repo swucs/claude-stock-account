@@ -11,6 +11,7 @@ import com.stock.account.dto.AccountCreateRequest;
 import com.stock.account.dto.AccountResponse;
 import com.stock.account.dto.AccountUpdateRequest;
 import com.stock.account.repository.AccountRepository;
+import com.stock.account.repository.BrokerTokenRepository;
 import com.stock.account.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -25,6 +26,7 @@ public class AccountService {
 
     private final AccountRepository accountRepository;
     private final UserRepository userRepository;
+    private final BrokerTokenRepository brokerTokenRepository;
     private final AesEncryptionUtil aesEncryptionUtil;
 
     @Transactional
@@ -80,6 +82,8 @@ public class AccountService {
     @Transactional
     public void deleteAccount(Long accountId, Long userId) {
         Account account = findAccountWithOwnership(accountId, userId);
+        // 계좌 삭제 시 저장된 토큰도 함께 삭제
+        brokerTokenRepository.deleteByAccountId(accountId);
         accountRepository.delete(account);
     }
 
