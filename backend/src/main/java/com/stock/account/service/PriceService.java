@@ -50,24 +50,17 @@ public class PriceService {
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
         ScheduledFuture<?> future = scheduler.scheduleAtFixedRate(() -> {
-            try {
-                for (String stockCode : stockCodes) {
-                    StockPriceResponse price = client.getCurrentPrice(account, token.accessToken(), stockCode);
-                    emitter.send(SseEmitter.event()
-                            .name("price")
-                            .data(price));
-                }
-            } catch (IOException e) {
-                log.warn("SSE 전송 실패 - accountId: {}", accountId);
-                emitter.completeWithError(e);
-            } catch (Exception e) {
-                log.error("시세 조회 실패 - accountId: {}", accountId, e);
+            for (String stockCode : stockCodes) {
                 try {
-                    emitter.send(SseEmitter.event()
-                            .name("error")
-                            .data("{\"message\":\"시세 조회 중 오류가 발생했습니다.\"}"));
-                } catch (IOException ignored) {
+                    StockPriceResponse price = client.getCurrentPrice(account, token.accessToken(), stockCode);
+                    emitter.send(SseEmitter.event().data(price));
+                } catch (IOException e) {
+                    log.warn("SSE 전송 실패 (클라이언트 연결 종료) - accountId: {}", accountId);
                     emitter.completeWithError(e);
+                    return;
+                } catch (Exception e) {
+                    log.warn("시세 조회 실패 - stockCode: {}, error: {}", stockCode, e.getMessage());
+                    // 개별 종목 실패 시 다음 종목 계속 처리
                 }
             }
         }, 0, PRICE_INTERVAL_SECONDS, TimeUnit.SECONDS);
