@@ -1,11 +1,24 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
+import { authService } from '../../services/authService';
 
 export default function Header() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const clearTokens = useAuthStore((state) => state.clearTokens);
+  const userName = useAuthStore((state) => state.userName);
+  const setUserName = useAuthStore((state) => state.setUserName);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!userName) {
+      authService.getMe().then((result) => {
+        if (result.success && result.data) {
+          setUserName(result.data.name);
+        }
+      }).catch(() => {});
+    }
+  }, [userName, setUserName]);
 
   const handleLogout = () => {
     clearTokens();
@@ -34,7 +47,7 @@ export default function Header() {
             backgroundColor: '#fff',
           }}
         >
-          내 정보
+          {userName || '내 정보'}
         </button>
         {dropdownOpen && (
           <div style={{

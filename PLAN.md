@@ -21,19 +21,15 @@
 
 > **참고**: Java 25가 아닌 Java 21 사용 (로컬 환경). Spring Boot 4.0.3이 Gradle 8.14+를 요구하여 8.12→8.14로 변경.
 
-## Phase 1: 사용자 인증 (JWT 기반)
-- [ ] **Entity 설계**
-  - `User`: 이메일(unique), 비밀번호(BCrypt), 이름, 생성일, 수정일
-- [ ] **Repository**: `UserRepository` (JPA)
-- [ ] **Service**: `UserService` — 회원가입, 사용자 조회, 정보 수정
-- [ ] **JWT 구현**
-  - `JwtTokenProvider`: 토큰 생성/검증/파싱 (Access Token + Refresh Token)
-  - `JwtAuthenticationFilter`: OncePerRequestFilter, Authorization 헤더에서 토큰 추출
-  - `SecurityConfig`: Stateless 세션, CORS 설정, BCrypt PasswordEncoder
-- [ ] **DTO**: `SignupRequest`, `LoginRequest`, `TokenResponse`, `UserResponse`
-- [ ] **Controller**: `AuthController` — 회원가입/로그인/토큰 갱신 API, `UserApiController` — 내 정보 API
-- [ ] **React 화면**: 로그인 페이지, 회원가입 페이지, AuthContext (토큰 관리)
-- [ ] **테스트**: 회원가입/로그인/JWT 검증/토큰 갱신 단위 + 통합 테스트 (TDD)
+## Phase 1: 사용자 인증 (JWT 기반) ✅ (2026-03-15 완료)
+- [x] **Entity 설계**: `User` (이메일(unique), 비밀번호(BCrypt), 이름, 생성일, 수정일)
+- [x] **Repository**: `UserRepository` (JPA)
+- [x] **Service**: `UserService` — 회원가입, 로그인, 토큰 갱신, 사용자 조회, 정보 수정
+- [x] **JWT 구현**: `JwtTokenProvider`, `JwtAuthenticationFilter`, `JwtAuthenticationEntryPoint`
+- [x] **DTO**: `SignupRequest`, `LoginRequest`, `TokenResponse`, `UserResponse`, `UserUpdateRequest`, `RefreshTokenRequest`
+- [x] **Controller**: `AuthController`, `UserApiController`
+- [x] **React 화면**: 로그인/회원가입 폼 구현, authService, Header 사용자 이름 표시
+- [x] **테스트**: JwtTokenProvider 단위 7개, UserService 단위 11개, 통합 테스트 7개 (총 25개 통과)
 
 ## Phase 2: 계좌 및 인증정보 관리
 - [ ] **Entity 설계**

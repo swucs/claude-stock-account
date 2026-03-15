@@ -1,7 +1,7 @@
 # TASK.md - 작업 추적
 
 ## 현재 진행 중
-- [ ] Phase 1: 사용자 인증 (JWT 기반)
+- [x] Phase 1: 사용자 인증 (JWT 기반) ✅ (2026-03-15 완료)
 
 ## Phase 0: 프로젝트 초기 설정 ✅ (2026-03-14 완료)
 ### Back-end (`backend/`)
@@ -24,23 +24,24 @@
 - [x] 공통 레이아웃 컴포넌트 (Header, Sidebar, Layout)
 - [x] Placeholder 페이지 6개 (Login, Signup, Dashboard, Balance, Price, Accounts)
 
-## Phase 1: 사용자 인증 (JWT 기반)
+## Phase 1: 사용자 인증 (JWT 기반) ✅ (2026-03-15 완료)
 ### Back-end
-- [ ] User Entity 작성 (email, password, name)
-- [ ] UserRepository 작성
-- [ ] UserService 작성 (회원가입, 조회, 수정)
-- [ ] JwtTokenProvider 구현 (Access Token + Refresh Token 생성/검증)
-- [ ] JwtAuthenticationFilter 구현 (OncePerRequestFilter)
-- [ ] SecurityConfig 설정 (Stateless, CORS, BCrypt)
-- [ ] AuthController 작성 (회원가입/로그인/토큰 갱신 API)
-- [ ] UserApiController 작성 (내 정보 조회/수정 API)
+- [x] User Entity 작성 (email, password, name)
+- [x] UserRepository 작성
+- [x] UserService 작성 (회원가입, 조회, 수정)
+- [x] JwtTokenProvider 구현 (Access Token + Refresh Token 생성/검증)
+- [x] JwtAuthenticationFilter 구현 (OncePerRequestFilter)
+- [x] SecurityConfig 설정 (JWT 필터 등록, AuthenticationEntryPoint, Stateless, CORS, BCrypt)
+- [x] AuthController 작성 (회원가입/로그인/토큰 갱신 API)
+- [x] UserApiController 작성 (내 정보 조회/수정 API)
 ### Front-end
-- [ ] AuthContext / useAuth 훅 구현 (토큰 관리)
-- [ ] 로그인 페이지 (React)
-- [ ] 회원가입 페이지 (React)
+- [x] authService 구현 (login, signup, refresh, getMe, updateMe)
+- [x] 로그인 페이지 (폼 + 에러 처리 + 로딩 상태)
+- [x] 회원가입 페이지 (폼 + 비밀번호 확인 + 에러 처리)
+- [x] authStore에 userName 추가 (Header에 사용자 이름 표시)
 ### 테스트
-- [ ] 단위 테스트 (UserService, JwtTokenProvider)
-- [ ] 통합 테스트 (회원가입/로그인/JWT 검증/토큰 갱신)
+- [x] 단위 테스트 (UserService 11개, JwtTokenProvider 7개)
+- [x] 통합 테스트 (회원가입/로그인/JWT 검증/토큰 갱신/내 정보 조회/수정 7개)
 
 ## Phase 2: 계좌 및 인증정보 관리
 - [ ] Account Entity + BrokerType Enum 작성 (user_id FK 포함)
@@ -82,3 +83,4 @@
 
 ## 완료된 작업
 - [x] Phase 0: 프로젝트 초기 설정 (2026-03-14)
+- [x] Phase 1: 사용자 인증 — JWT 기반 (2026-03-15)
