@@ -45,6 +45,7 @@
 ## Phase 3: 한국투자증권 (KIS) 연동
 > 상세 API 스펙: [BROKER-API.md](BROKER-API.md) 섹션 1 참조
 - [ ] **인증**: `POST /oauth2/tokenP` — OAuth2 토큰 발급/갱신 (24시간 유효)
+- [ ] **토큰 영속화**: BrokerToken 엔티티 + 2-Layer 캐시(메모리+DB) — 서버 재시작 시 토큰 재사용 (KIS 하루 1회 발급 권고 대응)
 - [ ] **잔고 조회**: `GET /uapi/.../inquire-balance` (tr_id: `TTTC8434R`) → 응답 매핑 → 화면 (30초 자동 갱신)
 - [ ] **실시간 시세**: `GET /uapi/.../inquire-price` (tr_id: `FHKST01010100`) → SseEmitter 스트리밍
 - [ ] **React 화면**: 증권사 선택 → 계좌 선택 → 기능별 탭 (잔고/시세)
@@ -145,4 +146,16 @@ CREATE TABLE account (
 );
 
 CREATE INDEX idx_account_user_id ON account(user_id);
+
+CREATE TABLE broker_token (
+    id              BIGSERIAL PRIMARY KEY,
+    account_id      BIGINT NOT NULL,
+    broker_type     VARCHAR(20) NOT NULL,       -- KIS, KIWOOM, LS
+    access_token    TEXT NOT NULL,              -- AES-256-GCM 암호화
+    token_type      VARCHAR(20) NOT NULL,
+    expires_at      TIMESTAMP NOT NULL,
+    created_at      TIMESTAMP DEFAULT now(),
+    updated_at      TIMESTAMP DEFAULT now(),
+    UNIQUE (account_id, broker_type)
+);
 ```

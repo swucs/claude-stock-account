@@ -32,8 +32,8 @@ public class KisApiClient implements BrokerApiClient {
     private final AesEncryptionUtil aesEncryptionUtil;
     private final KisTokenCache tokenCache;
 
-    // 모의투자용 tr_id
-    private static final String TR_ID_BALANCE = "VTTC8434R";
+    // 실전투자용 tr_id
+    private static final String TR_ID_BALANCE = "TTTC8434R";
     private static final String TR_ID_PRICE = "FHKST01010100";
 
     @Override

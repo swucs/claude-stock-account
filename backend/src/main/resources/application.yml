@@ -34,7 +34,7 @@ encryption:
 # Broker API
 broker:
   kis:
-    base-url: https://openapivts.koreainvestment.com:29443
+    base-url: https://openapi.koreainvestment.com:9443
     token-path: /oauth2/tokenP
     balance-path: /uapi/domestic-stock/v1/trading/inquire-balance
     price-path: /uapi/domestic-stock/v1/quotations/inquire-price

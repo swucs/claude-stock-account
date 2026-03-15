@@ -57,6 +57,7 @@
 - [ ] KIS API 문서 분석 및 정리
 - [ ] BrokerApiClient 인터페이스 정의
 - [ ] KisApiClient 구현 (인증)
+- [ ] KIS 토큰 DB 영속화 (BrokerToken 엔티티 + 2-Layer 캐시: 메모리+DB, AES-256-GCM 암호화 저장)
 - [ ] KisApiClient 구현 (잔고 조회 + 30초 자동 갱신 API)
 - [ ] KisApiClient 구현 (실시간 시세 - SSE / SseEmitter)
 - [ ] 조회 화면 구현 (React: 증권사 선택 → 계좌 선택 → 조회)
