@@ -10,7 +10,8 @@
 | 환경 | URL |
 |------|-----|
 | 실전투자 | `https://openapi.koreainvestment.com:9443` |
-| 모의투자 | `https://openapivts.koreainvestment.com:29443` |
+
+> 모의투자 계좌는 사용하지 않음. 실전투자 URL만 사용한다.
 
 ### 공통 요청 헤더
 | 헤더 | 값 |
@@ -52,7 +53,7 @@
 | 항목 | 내용 |
 |------|------|
 | **URL** | `GET /uapi/domestic-stock/v1/trading/inquire-balance` |
-| **tr_id** | `TTTC8434R` (실전) / `VTTC8434R` (모의) |
+| **tr_id** | `TTTC8434R` (실전투자) |
 
 **Request Headers**
 
@@ -62,7 +63,7 @@
 | `authorization` | `Bearer {access_token}` | 접근토큰 |
 | `appkey` | `{앱키}` | 앱 키 |
 | `appsecret` | `{앱시크릿}` | 앱 시크릿 |
-| `tr_id` | `TTTC8434R` / `VTTC8434R` | 트랜잭션ID (실전/모의) |
+| `tr_id` | `TTTC8434R` | 트랜잭션ID (실전투자) |
 | `tr_cont` | `""` (최초) / `"N"` (연속) | 연속거래 여부 |
 | `custtype` | `"P"` | 고객타입 (P: 개인) |
 
@@ -262,7 +263,8 @@ https://openapi.kiwoom.com
 | 환경 | URL |
 |------|-----|
 | 실전투자 | `https://openapi.ls-sec.co.kr:8080` |
-| 모의투자 | `https://openapi.ls-sec.co.kr:29443` |
+
+> 모의투자 계좌는 사용하지 않음. 실전투자 URL만 사용한다.
 
 ### 공통 요청 헤더
 | 헤더 | 값 |

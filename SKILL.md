@@ -116,7 +116,7 @@
 ### 한국투자증권 (KIS)
 - 문서: https://apiportal.koreainvestment.com/apiservice-apiservice
 - 인증: OAuth2 (appkey + appsecret → access_token)
-- 모의투자/실전투자 도메인 분리
+- 실전투자 도메인만 사용 (모의투자 미사용)
 - 요청 헤더에 tr_id(거래ID), custtype(고객유형) 등 필수
 
 ### 키움
