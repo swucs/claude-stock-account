@@ -49,8 +49,44 @@ export interface AccountCreateRequest {
 }
 
 export interface AccountUpdateRequest {
+  accountNumber?: string;
   accountName?: string;
   appKey?: string;
   secretKey?: string;
   additionalInfo?: string;
+}
+
+// 잔고 관련
+export interface StockHolding {
+  stockCode: string;
+  stockName: string;
+  quantity: number;
+  avgPurchasePrice: number;
+  currentPrice: number;
+  evaluationAmount: number;
+  profitLossAmount: number;
+  profitLossRate: number;
+}
+
+export interface BalanceResponse {
+  accountId: number;
+  accountNumber: string;
+  brokerName: string;
+  totalEvaluationAmount: number;
+  totalPurchaseAmount: number;
+  totalProfitLossAmount: number;
+  holdings: StockHolding[];
+}
+
+// 시세 관련
+export interface StockPriceResponse {
+  stockCode: string;
+  stockName: string;
+  currentPrice: number;
+  changePrice: number;
+  changeRate: number;
+  volume: number;
+  highPrice: number;
+  lowPrice: number;
+  openPrice: number;
 }

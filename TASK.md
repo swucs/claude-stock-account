@@ -1,7 +1,7 @@
 # TASK.md - 작업 추적
 
 ## 현재 진행 중
-- [x] Phase 1: 사용자 인증 (JWT 기반) ✅ (2026-03-15 완료)
+- [x] Phase 2: 계좌 및 인증정보 관리 ✅ (2026-03-15 완료)
 
 ## Phase 0: 프로젝트 초기 설정 ✅ (2026-03-14 완료)
 ### Back-end (`backend/`)
@@ -43,15 +43,15 @@
 - [x] 단위 테스트 (UserService 11개, JwtTokenProvider 7개)
 - [x] 통합 테스트 (회원가입/로그인/JWT 검증/토큰 갱신/내 정보 조회/수정 7개)
 
-## Phase 2: 계좌 및 인증정보 관리
-- [ ] Account Entity + BrokerType Enum 작성 (user_id FK 포함)
-- [ ] AccountRepository 작성 (findByUserId 등)
-- [ ] AccountService 작성 (CRUD + 암호화/복호화 + 소유권 검증)
-- [ ] AccountDto / Request / Response 작성 (마스킹 포함)
-- [ ] AccountController 작성 (로그인 사용자 기준)
-- [ ] 계좌 관리 화면 (React)
-- [ ] 단위 테스트 (Service, 암호화, 마스킹, 소유권 검증)
-- [ ] 통합 테스트 (Controller, Repository)
+## Phase 2: 계좌 및 인증정보 관리 ✅ (2026-03-15 완료)
+- [x] Account Entity + BrokerType Enum 작성 (user_id FK 포함)
+- [x] AccountRepository 작성 (findByUserId 등)
+- [x] AccountService 작성 (CRUD + 암호화/복호화 + 소유권 검증)
+- [x] AccountDto / Request / Response 작성 (마스킹 포함)
+- [x] AccountController 작성 (로그인 사용자 기준)
+- [x] 계좌 관리 화면 (React)
+- [x] 단위 테스트 (Service, 암호화, 마스킹, 소유권 검증)
+- [x] 통합 테스트 (Controller, Repository)
 
 ## Phase 3: 한국투자증권 (KIS)
 - [ ] KIS API 문서 분석 및 정리
@@ -84,3 +84,4 @@
 ## 완료된 작업
 - [x] Phase 0: 프로젝트 초기 설정 (2026-03-14)
 - [x] Phase 1: 사용자 인증 — JWT 기반 (2026-03-15)
+- [x] Phase 2: 계좌 및 인증정보 관리 — CRUD + 암호화 + 마스킹 (2026-03-15)

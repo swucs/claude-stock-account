@@ -27,6 +27,15 @@ public enum ErrorCode {
     ACCOUNT_NOT_FOUND(HttpStatus.NOT_FOUND, "AC001", "계좌를 찾을 수 없습니다."),
     ACCOUNT_ACCESS_DENIED(HttpStatus.FORBIDDEN, "AC002", "해당 계좌에 대한 접근 권한이 없습니다."),
 
+    // Broker API
+    BROKER_AUTH_FAILED(HttpStatus.BAD_GATEWAY, "B001", "증권사 인증에 실패했습니다."),
+    BROKER_API_ERROR(HttpStatus.BAD_GATEWAY, "B002", "증권사 API 호출 중 오류가 발생했습니다."),
+    BROKER_TOKEN_EXPIRED(HttpStatus.BAD_GATEWAY, "B003", "증권사 접근토큰이 만료되었습니다."),
+    BROKER_RATE_LIMIT(HttpStatus.TOO_MANY_REQUESTS, "B004", "증권사 API 호출 제한을 초과했습니다."),
+    BROKER_NOT_SUPPORTED(HttpStatus.BAD_REQUEST, "B005", "지원하지 않는 증권사입니다."),
+    INVALID_ACCOUNT_FORMAT(HttpStatus.BAD_REQUEST, "B006", "계좌번호 형식이 올바르지 않습니다."),
+    SSE_CONNECTION_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "B007", "실시간 시세 연결 중 오류가 발생했습니다."),
+
     // Encryption
     ENCRYPTION_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "E001", "암호화 처리 중 오류가 발생했습니다."),
     DECRYPTION_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "E002", "복호화 처리 중 오류가 발생했습니다.");

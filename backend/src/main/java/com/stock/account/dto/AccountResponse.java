@@ -22,7 +22,7 @@ public record AccountResponse(
                 account.getId(),
                 account.getBrokerType(),
                 account.getBrokerType().getDisplayName(),
-                MaskingUtil.maskAccountNumber(account.getAccountNumber()),
+                account.getAccountNumber(),
                 account.getAccountName(),
                 MaskingUtil.maskKey(account.getAppKey()),
                 MaskingUtil.maskKey(account.getSecretKey()),
