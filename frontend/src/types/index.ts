@@ -19,3 +19,38 @@ export interface User {
   email: string;
   name: string;
 }
+
+export type BrokerType = 'KIS' | 'KIWOOM' | 'LS';
+
+export interface BrokerInfo {
+  code: BrokerType;
+  name: string;
+}
+
+export interface Account {
+  id: number;
+  brokerType: BrokerType;
+  brokerName: string;
+  accountNumber: string;
+  accountName: string;
+  appKey: string;
+  secretKey: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AccountCreateRequest {
+  brokerType: BrokerType;
+  accountNumber: string;
+  accountName: string;
+  appKey: string;
+  secretKey: string;
+  additionalInfo?: string;
+}
+
+export interface AccountUpdateRequest {
+  accountName?: string;
+  appKey?: string;
+  secretKey?: string;
+  additionalInfo?: string;
+}
