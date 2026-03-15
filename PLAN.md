@@ -31,16 +31,16 @@
 - [x] **React 화면**: 로그인/회원가입 폼 구현, authService, Header 사용자 이름 표시
 - [x] **테스트**: JwtTokenProvider 단위 7개, UserService 단위 11개, 통합 테스트 7개 (총 25개 통과)
 
-## Phase 2: 계좌 및 인증정보 관리
-- [ ] **Entity 설계**
+## Phase 2: 계좌 및 인증정보 관리 ✅ (2026-03-15 완료)
+- [x] **Entity 설계**
   - `BrokerType` (enum): KIS, KIWOOM, LS
   - `Account`: 증권사, 계좌번호, 계좌명, 인증정보(암호화), **user_id (FK → User)**
-- [ ] **Repository**: `AccountRepository` (JPA) — `findByUserId()` 등 사용자 기반 조회
-- [ ] **Service**: `AccountService` — CRUD + 암호화/복호화 + **소유권 검증**
-- [ ] **DTO**: `AccountDto`, `AccountCreateRequest`, `AccountResponse` (마스킹 적용)
-- [ ] **Controller**: `AccountController` — 계좌 등록/수정/삭제/목록 (로그인 사용자 기준)
-- [ ] **React 화면**: 계좌 관리 페이지 (등록 폼, 목록, 수정/삭제)
-- [ ] **테스트**: 단위 테스트 + 통합 테스트 (TDD, 소유권 검증 포함)
+- [x] **Repository**: `AccountRepository` (JPA) — `findByUserId()` 등 사용자 기반 조회
+- [x] **Service**: `AccountService` — CRUD + 암호화/복호화 + **소유권 검증**
+- [x] **DTO**: `AccountDto`, `AccountCreateRequest`, `AccountResponse` (마스킹 적용)
+- [x] **Controller**: `AccountController` — 계좌 등록/수정/삭제/목록 (로그인 사용자 기준)
+- [x] **React 화면**: 계좌 관리 페이지 (등록 폼, 목록, 수정/삭제)
+- [x] **테스트**: 단위 테스트 + 통합 테스트 (TDD, 소유권 검증 포함)
 
 ## Phase 3: 한국투자증권 (KIS) 연동
 > 상세 API 스펙: [BROKER-API.md](BROKER-API.md) 섹션 1 참조
