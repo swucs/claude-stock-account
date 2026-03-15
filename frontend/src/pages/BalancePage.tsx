@@ -37,9 +37,11 @@ export default function BalancePage() {
         setLastUpdated(new Date().toLocaleTimeString());
       } else {
         setError(result.error?.message || '잔고 조회에 실패했습니다.');
+        setBalance(null);
       }
     } catch {
       setError('잔고 조회에 실패했습니다.');
+      setBalance(null);
     } finally {
       setLoading(false);
     }
@@ -133,7 +135,8 @@ export default function BalancePage() {
       <div style={{ marginBottom: '20px', display: 'flex', gap: '8px' }}>
         <button
           style={selectedBroker === '' ? btnPrimary : btnSecondary}
-          onClick={() => handleBrokerChange('')}
+          onClick={() => !loading && handleBrokerChange('')}
+          disabled={loading}
         >
           전체
         </button>
@@ -141,7 +144,8 @@ export default function BalancePage() {
           <button
             key={broker.code}
             style={selectedBroker === broker.code ? btnPrimary : btnSecondary}
-            onClick={() => handleBrokerChange(broker.code)}
+            onClick={() => !loading && handleBrokerChange(broker.code)}
+            disabled={loading}
           >
             {broker.name}
           </button>
@@ -156,6 +160,7 @@ export default function BalancePage() {
             style={selectStyle}
             value={selectedAccountId ?? ''}
             onChange={(e) => setSelectedAccountId(e.target.value ? Number(e.target.value) : null)}
+            disabled={loading}
           >
             <option value="">선택하세요</option>
             {filteredAccounts.map((a) => (
@@ -224,6 +229,16 @@ export default function BalancePage() {
                 {balance.totalProfitLossAmount >= 0 ? '+' : ''}{formatNumber(balance.totalProfitLossAmount)}
                 <span style={{ fontSize: '14px' }}> 원</span>
               </div>
+              {balance.totalPurchaseAmount > 0 && (
+                <div style={{
+                  fontSize: '14px',
+                  fontWeight: 'bold',
+                  color: balance.totalProfitLossAmount >= 0 ? '#d32f2f' : '#1976d2',
+                  marginTop: '4px',
+                }}>
+                  {formatRate(balance.totalProfitLossAmount / balance.totalPurchaseAmount * 100)}
+                </div>
+              )}
             </div>
           </div>
 
