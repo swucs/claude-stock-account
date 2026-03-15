@@ -169,6 +169,26 @@ export default function PricePage() {
     minWidth: '160px',
   };
 
+  const btnPrimary = {
+    padding: '8px 20px',
+    backgroundColor: '#1976d2',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '14px',
+  };
+
+  const btnSecondary = {
+    padding: '8px 20px',
+    backgroundColor: '#fff',
+    color: '#333',
+    border: '1px solid #ccc',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '14px',
+  };
+
   const btnStyle = (active: boolean) => ({
     padding: '8px 16px',
     backgroundColor: active ? '#4caf50' : '#1976d2',
@@ -197,21 +217,27 @@ export default function PricePage() {
         </div>
       </div>
 
-      {/* 증권사 & 계좌 선택 */}
-      <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap' }}>
-        <div>
-          <label style={{ fontSize: '13px', color: '#666', marginRight: '8px' }}>증권사</label>
-          <select
-            style={selectStyle}
-            value={selectedBroker}
-            onChange={(e) => handleBrokerChange(e.target.value as BrokerType | '')}
+      {/* 증권사 탭 필터 */}
+      <div style={{ marginBottom: '20px', display: 'flex', gap: '8px' }}>
+        <button
+          style={selectedBroker === '' ? btnPrimary : btnSecondary}
+          onClick={() => handleBrokerChange('')}
+        >
+          전체
+        </button>
+        {brokers.map((broker) => (
+          <button
+            key={broker.code}
+            style={selectedBroker === broker.code ? btnPrimary : btnSecondary}
+            onClick={() => handleBrokerChange(broker.code)}
           >
-            <option value="">전체</option>
-            {brokers.map((b) => (
-              <option key={b.code} value={b.code}>{b.name}</option>
-            ))}
-          </select>
-        </div>
+            {broker.name}
+          </button>
+        ))}
+      </div>
+
+      {/* 계좌 선택 & 연결 옵션 */}
+      <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap' }}>
         <div>
           <label style={{ fontSize: '13px', color: '#666', marginRight: '8px' }}>계좌</label>
           <select
