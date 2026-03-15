@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -73,8 +74,9 @@ public class KisTokenCache {
 
     /**
      * 토큰을 메모리 캐시와 DB에 동시에 저장한다.
+     * REQUIRES_NEW: 호출자가 readOnly 트랜잭션이어도 독립 쓰기 트랜잭션을 사용한다.
      */
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void putToken(Long accountId, BrokerTokenResponse token) {
         // 메모리 캐시 저장
         memoryCache.put(accountId, token);
@@ -103,7 +105,7 @@ public class KisTokenCache {
     /**
      * 토큰을 메모리 캐시와 DB에서 삭제한다.
      */
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void removeToken(Long accountId) {
         memoryCache.remove(accountId);
         brokerTokenRepository.deleteByAccountIdAndBrokerType(accountId, BrokerType.KIS);

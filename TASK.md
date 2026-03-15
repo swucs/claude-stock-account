@@ -54,14 +54,15 @@
 - [x] 통합 테스트 (Controller, Repository)
 
 ## Phase 3: 한국투자증권 (KIS)
-- [ ] KIS API 문서 분석 및 정리
-- [ ] BrokerApiClient 인터페이스 정의
-- [ ] KisApiClient 구현 (인증)
-- [ ] KIS 토큰 DB 영속화 (BrokerToken 엔티티 + 2-Layer 캐시: 메모리+DB, AES-256-GCM 암호화 저장)
-- [ ] KisApiClient 구현 (잔고 조회 + 30초 자동 갱신 API)
+- [x] KIS API 문서 분석 및 정리
+- [x] BrokerApiClient 인터페이스 정의
+- [x] KisApiClient 구현 (인증) — 실전투자 URL/tr_id 적용
+- [x] KIS 토큰 DB 영속화 (BrokerToken 엔티티 + 2-Layer 캐시: 메모리+DB, AES-256-GCM 암호화 저장)
+  - REQUIRES_NEW 전파로 readOnly 트랜잭션 충돌 해결
+- [x] KisApiClient 구현 (잔고 조회 + 30초 자동 갱신 API)
 - [ ] KisApiClient 구현 (실시간 시세 - SSE / SseEmitter)
-- [ ] 조회 화면 구현 (React: 증권사 선택 → 계좌 선택 → 조회)
-- [ ] 잔고 조회 30초 자동 갱신 구현 (useEffect + Axios polling, ON/OFF 토글)
+- [x] 조회 화면 구현 (React: 증권사 탭 필터 → 계좌 선택 → 조회)
+- [x] 잔고 조회 30초 자동 갱신 구현 (useEffect + Axios polling, ON/OFF 토글)
 - [ ] KIS 관련 테스트 작성 (자동 갱신 포함)
 
 ## Phase 4: 키움
