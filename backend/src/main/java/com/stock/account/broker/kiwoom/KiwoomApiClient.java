@@ -201,7 +201,20 @@ public class KiwoomApiClient implements BrokerApiClient {
                     .retrieve()
                     .body(KiwoomPriceApiResponse.class);
 
-            if (response == null || response.items() == null || response.items().isEmpty()) {
+            if (response == null) {
+                throw new BusinessException(ErrorCode.BROKER_API_ERROR, "키움 시세 API 응답이 null입니다.");
+            }
+
+            if (response.returnCode() != null && response.returnCode() != 0) {
+                log.warn("키움 시세 API 오류 - returnCode: {}, returnMsg: {}, stockCode: {}",
+                        response.returnCode(), response.returnMsg(), kiwoomStockCode);
+                throw new BusinessException(ErrorCode.BROKER_API_ERROR,
+                        "키움 시세 오류 [" + response.returnCode() + "]: " + response.returnMsg());
+            }
+
+            if (response.items() == null || response.items().isEmpty()) {
+                log.warn("키움 시세 API 응답 비어있음 - stockCode: {}, returnCode: {}, returnMsg: {}",
+                        kiwoomStockCode, response.returnCode(), response.returnMsg());
                 throw new BusinessException(ErrorCode.BROKER_API_ERROR, "키움 시세 API 응답이 비어있습니다.");
             }
 

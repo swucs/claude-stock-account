@@ -50,27 +50,24 @@ public class PriceServiceImpl implements PriceService {
         BrokerTokenResponse token = client.authenticate(account);
 
         SseEmitter emitter = new SseEmitter(SSE_TIMEOUT);
-        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+        // 2개 스레드: heartbeat 전용 + 시세 조회 전용
+        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
 
-        ScheduledFuture<?> future = scheduler.scheduleAtFixedRate(() -> {
-            for (String stockCode : stockCodes) {
-                try {
-                    StockPriceResponse price = client.getCurrentPrice(account, token.accessToken(), stockCode);
-                    emitter.send(SseEmitter.event().data(price));
-                } catch (IOException e) {
-                    log.warn("SSE 전송 실패 (클라이언트 연결 종료) - accountId: {}", accountId);
-                    emitter.completeWithError(e);
-                    return;
-                } catch (Exception e) {
-                    log.warn("시세 조회 실패 - stockCode: {}, error: {}", stockCode, e.getMessage());
-                    // 개별 종목 실패 시 다음 종목 계속 처리
-                }
+        // Heartbeat: 2초마다 comment 이벤트 전송 — 프록시/브라우저 연결 유지
+        ScheduledFuture<?> heartbeatFuture = scheduler.scheduleAtFixedRate(() -> {
+            try {
+                emitter.send(SseEmitter.event().comment("heartbeat"));
+            } catch (Exception ignored) {
+                // 연결 종료 시 무시 (price 스레드에서 처리)
             }
-        }, 0, PRICE_INTERVAL_SECONDS, TimeUnit.SECONDS);
+        }, 1, 2, TimeUnit.SECONDS);
+
+        // 시세 조회: 이전 사이클 완료 후 다음 사이클 예약 (API가 느릴 때 겹침 방지)
+        scheduleNextPriceCycle(scheduler, emitter, client, account, token, stockCodes, accountId);
 
         // 정리 콜백
         Runnable cleanup = () -> {
-            future.cancel(true);
+            heartbeatFuture.cancel(true);
             scheduler.shutdown();
         };
 
@@ -79,6 +76,39 @@ public class PriceServiceImpl implements PriceService {
         emitter.onError(e -> cleanup.run());
 
         return emitter;
+    }
+
+    private void scheduleNextPriceCycle(
+            ScheduledExecutorService scheduler,
+            SseEmitter emitter,
+            BrokerApiClient client,
+            Account account,
+            BrokerTokenResponse token,
+            List<String> stockCodes,
+            Long accountId) {
+
+        scheduler.schedule(() -> {
+            if (scheduler.isShutdown()) return;
+
+            for (String stockCode : stockCodes) {
+                if (scheduler.isShutdown()) return;
+                try {
+                    StockPriceResponse price = client.getCurrentPrice(account, token.accessToken(), stockCode);
+                    emitter.send(SseEmitter.event().data(price));
+                } catch (IOException e) {
+                    log.warn("SSE 전송 실패 (클라이언트 연결 종료) - accountId: {}", accountId);
+                    emitter.completeWithError(e);
+                    return;
+                } catch (Exception e) {
+                    log.warn("시세 조회 실패 - accountId: {}, stockCode: {}, error: {}", accountId, stockCode, e.getMessage());
+                }
+            }
+
+            // 이전 사이클 완료 후 다음 사이클 예약
+            if (!scheduler.isShutdown()) {
+                scheduleNextPriceCycle(scheduler, emitter, client, account, token, stockCodes, accountId);
+            }
+        }, PRICE_INTERVAL_SECONDS, TimeUnit.SECONDS);
     }
 
     private Account findAccountWithOwnership(Long accountId, Long userId) {
