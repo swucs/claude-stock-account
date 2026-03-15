@@ -5,7 +5,6 @@ import com.stock.account.broker.dto.BalanceResponse;
 import com.stock.account.broker.dto.BrokerTokenResponse;
 import com.stock.account.broker.dto.StockHolding;
 import com.stock.account.broker.dto.StockPriceResponse;
-import com.stock.account.broker.kis.KisAccountUtil;
 import com.stock.account.broker.kiwoom.dto.*;
 import com.stock.account.common.exception.BusinessException;
 import com.stock.account.common.exception.ErrorCode;
@@ -17,13 +16,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -37,8 +36,16 @@ public class KiwoomApiClient implements BrokerApiClient {
     private final AesEncryptionUtil aesEncryptionUtil;
     private final KiwoomTokenCache tokenCache;
 
-    private static final String TR_ID_BALANCE = "TTTC8434R";
-    private static final String TR_ID_PRICE = "FHKST01010100";
+    // 키움 API ID (KIS의 tr_id에 해당)
+    private static final String API_ID_BALANCE = "kt00018";  // 계좌평가잔고내역요청
+    private static final String API_ID_PRICE = "ka10095";    // 관심종목정보요청
+
+    // 키움 expires_dt 응답 형식: "yyyyMMddHHmmss"
+    private static final DateTimeFormatter EXPIRES_FORMATTER =
+            DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+
+    // 종목코드 A-prefix (KRX 국내주식)
+    private static final String KRX_PREFIX = "A";
 
     @Override
     public BrokerType getBrokerType() {
@@ -58,27 +65,28 @@ public class KiwoomApiClient implements BrokerApiClient {
         String tokenPath = brokerProperties.getKiwoom().getTokenPath();
 
         try {
-            // 키움은 application/x-www-form-urlencoded 방식으로 토큰 발급
-            MultiValueMap<String, String> formParams = new LinkedMultiValueMap<>();
-            formParams.add("grant_type", "client_credentials");
-            formParams.add("appkey", appKey);
-            formParams.add("appsecret", secretKey);
-
+            // 키움은 JSON body로 토큰 발급 (appkey, secretkey 파라미터명)
             KiwoomTokenApiResponse response = brokerRestClient.post()
                     .uri(baseUrl + tokenPath)
-                    .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                    .body(formParams)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(KiwoomTokenRequest.of(appKey, secretKey))
                     .retrieve()
                     .body(KiwoomTokenApiResponse.class);
 
-            if (response == null || response.accessToken() == null) {
+            if (response == null || response.token() == null) {
                 throw new BusinessException(ErrorCode.BROKER_AUTH_FAILED);
             }
 
-            LocalDateTime expiresAt = LocalDateTime.now().plusSeconds(response.expiresIn());
+            if (response.returnCode() != null && response.returnCode() != 0) {
+                throw new BusinessException(ErrorCode.BROKER_AUTH_FAILED,
+                        "키움 토큰 발급 실패: " + response.returnMsg());
+            }
+
+            // expires_dt: "yyyyMMddHHmmss" 형식
+            LocalDateTime expiresAt = LocalDateTime.parse(response.expiresDt(), EXPIRES_FORMATTER);
             BrokerTokenResponse tokenResponse = new BrokerTokenResponse(
-                    response.accessToken(),
-                    response.tokenType(),
+                    response.token(),
+                    response.tokenType() != null ? response.tokenType() : "bearer",
                     expiresAt
             );
 
@@ -96,56 +104,74 @@ public class KiwoomApiClient implements BrokerApiClient {
 
     @Override
     public BalanceResponse getBalance(Account account, String accessToken) {
-        String appKey = aesEncryptionUtil.decrypt(account.getAppKey());
-        String secretKey = aesEncryptionUtil.decrypt(account.getSecretKey());
         String baseUrl = brokerProperties.getKiwoom().getBaseUrl();
         String balancePath = brokerProperties.getKiwoom().getBalancePath();
 
-        String cano = KisAccountUtil.parseCano(account.getAccountNumber());
-        String acntPrdtCd = KisAccountUtil.parseAcntPrdtCd(account.getAccountNumber());
+        List<StockHolding> allHoldings = new ArrayList<>();
+        String totEvltAmt = "0";
+        String totPurAmt = "0";
+        String totEvltPl = "0";
+        String contYn = "";
+        String nextKey = "";
 
         try {
-            KiwoomBalanceApiResponse response = brokerRestClient.get()
-                    .uri(baseUrl + balancePath, uriBuilder -> uriBuilder
-                            .queryParam("CANO", cano)
-                            .queryParam("ACNT_PRDT_CD", acntPrdtCd)
-                            .queryParam("AFHR_FLPR_YN", "N")
-                            .queryParam("PRCS_DVSN", "00")
-                            .build())
-                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
-                    .header(HttpHeaders.CONTENT_TYPE, "application/json; charset=utf-8")
-                    .header("appkey", appKey)
-                    .header("appsecret", secretKey)
-                    .header("tr_id", TR_ID_BALANCE)
-                    .retrieve()
-                    .body(KiwoomBalanceApiResponse.class);
+            // cont-yn/next-key 헤더 기반 연속조회 루프
+            boolean hasMore = true;
+            while (hasMore) {
+                String finalContYn = contYn;
+                String finalNextKey = nextKey;
 
-            if (response == null) {
-                throw new BusinessException(ErrorCode.BROKER_API_ERROR, "키움 잔고 API 응답이 비어있습니다.");
-            }
+                ResponseEntity<KiwoomBalanceApiResponse> responseEntity = brokerRestClient.post()
+                        .uri(baseUrl + balancePath)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
+                        .header("api-id", API_ID_BALANCE)
+                        .header("cont-yn", finalContYn)
+                        .header("next-key", finalNextKey)
+                        .body(KiwoomBalanceRequest.defaultRequest())
+                        .retrieve()
+                        .toEntity(KiwoomBalanceApiResponse.class);
 
-            List<StockHolding> holdings = new ArrayList<>();
-            if (response.output1() != null) {
-                for (KiwoomBalanceItem item : response.output1()) {
-                    if (item.hldgQty() != null && Long.parseLong(item.hldgQty()) > 0) {
-                        holdings.add(mapToStockHolding(item));
+                KiwoomBalanceApiResponse body = responseEntity.getBody();
+                if (body == null) {
+                    throw new BusinessException(ErrorCode.BROKER_API_ERROR, "키움 잔고 API 응답이 비어있습니다.");
+                }
+
+                // 종목 매핑
+                if (body.holdings() != null) {
+                    for (KiwoomBalanceItem item : body.holdings()) {
+                        if (item.rmndQty() != null && Long.parseLong(item.rmndQty()) > 0) {
+                            allHoldings.add(mapToStockHolding(item));
+                        }
                     }
                 }
-            }
 
-            BigDecimal totalEval = BigDecimal.ZERO;
-            if (response.output2() != null && !response.output2().isEmpty()) {
-                totalEval = parseBigDecimal(response.output2().getFirst().totEvluAmt());
+                // 요약은 첫 번째 응답에서만 사용
+                if (contYn.isEmpty()) {
+                    totEvltAmt = body.totEvltAmt() != null ? body.totEvltAmt() : "0";
+                    totPurAmt = body.totPurAmt() != null ? body.totPurAmt() : "0";
+                    totEvltPl = body.totEvltPl() != null ? body.totEvltPl() : "0";
+                }
+
+                // 연속조회 확인 (응답 헤더)
+                String respContYn = responseEntity.getHeaders().getFirst("cont-yn");
+                if ("Y".equals(respContYn)) {
+                    contYn = "Y";
+                    nextKey = responseEntity.getHeaders().getFirst("next-key");
+                    if (nextKey == null) nextKey = "";
+                } else {
+                    hasMore = false;
+                }
             }
 
             return new BalanceResponse(
                     account.getId(),
                     account.getAccountNumber(),
                     account.getBrokerType().getDisplayName(),
-                    totalEval,
-                    BigDecimal.ZERO,
-                    BigDecimal.ZERO,
-                    holdings
+                    parseBigDecimal(totEvltAmt),
+                    parseBigDecimal(totPurAmt),
+                    parseBigDecimal(totEvltPl),
+                    allHoldings
             );
 
         } catch (BusinessException e) {
@@ -158,30 +184,29 @@ public class KiwoomApiClient implements BrokerApiClient {
 
     @Override
     public StockPriceResponse getCurrentPrice(Account account, String accessToken, String stockCode) {
-        String appKey = aesEncryptionUtil.decrypt(account.getAppKey());
-        String secretKey = aesEncryptionUtil.decrypt(account.getSecretKey());
         String baseUrl = brokerProperties.getKiwoom().getBaseUrl();
         String pricePath = brokerProperties.getKiwoom().getPricePath();
 
+        // 키움 종목코드는 A-prefix 필요 (KRX 국내주식)
+        String kiwoomStockCode = stockCode.startsWith(KRX_PREFIX)
+                ? stockCode : KRX_PREFIX + stockCode;
+
         try {
-            KiwoomPriceApiResponse response = brokerRestClient.get()
-                    .uri(baseUrl + pricePath, uriBuilder -> uriBuilder
-                            .queryParam("FID_COND_MRKT_DIV_CODE", "J")
-                            .queryParam("FID_INPUT_ISCD", stockCode)
-                            .build())
+            KiwoomPriceApiResponse response = brokerRestClient.post()
+                    .uri(baseUrl + pricePath)
+                    .contentType(MediaType.APPLICATION_JSON)
                     .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
-                    .header(HttpHeaders.CONTENT_TYPE, "application/json; charset=utf-8")
-                    .header("appkey", appKey)
-                    .header("appsecret", secretKey)
-                    .header("tr_id", TR_ID_PRICE)
+                    .header("api-id", API_ID_PRICE)
+                    .body(new KiwoomPriceRequest(kiwoomStockCode))
                     .retrieve()
                     .body(KiwoomPriceApiResponse.class);
 
-            if (response == null || response.output() == null) {
+            if (response == null || response.items() == null || response.items().isEmpty()) {
                 throw new BusinessException(ErrorCode.BROKER_API_ERROR, "키움 시세 API 응답이 비어있습니다.");
             }
 
-            return mapToPriceResponse(stockCode, response.output());
+            KiwoomPriceOutput output = response.items().getFirst();
+            return mapToPriceResponse(stockCode, output);
 
         } catch (BusinessException e) {
             throw e;
@@ -192,31 +217,42 @@ public class KiwoomApiClient implements BrokerApiClient {
     }
 
     private StockHolding mapToStockHolding(KiwoomBalanceItem item) {
-        // 키움 잔고 응답에는 현재가(prpr)가 없으므로 0으로 설정
+        // stk_cd에서 A-prefix 제거 (예: "A005930" → "005930")
+        String stockCode = item.stkCd() != null && item.stkCd().startsWith(KRX_PREFIX)
+                ? item.stkCd().substring(1) : item.stkCd();
+
         return new StockHolding(
-                item.pdno(),
-                item.prdtName(),
-                Long.parseLong(item.hldgQty()),
-                parseBigDecimal(item.pchsAvgPric()),
-                BigDecimal.ZERO,
-                parseBigDecimal(item.evluAmt()),
-                parseBigDecimal(item.evluPflsAmt()),
-                parseBigDecimal(item.evluPflsRt())
+                stockCode,
+                item.stkNm(),
+                parseLong(item.rmndQty()),
+                parseAbsoluteBigDecimal(item.purPric()),
+                parseAbsoluteBigDecimal(item.curPrc()),   // 키움은 잔고에 현재가 포함
+                parseAbsoluteBigDecimal(item.evltAmt()),
+                parseBigDecimal(item.elvtvPrft()),
+                parseBigDecimal(item.prftRt())
         );
     }
 
     private StockPriceResponse mapToPriceResponse(String stockCode, KiwoomPriceOutput output) {
         return new StockPriceResponse(
                 stockCode,
-                output.htsKorIsnm() != null ? output.htsKorIsnm() : "",
-                parseBigDecimal(output.stckPrpr()),
-                parseBigDecimal(output.prdyVrss()),
-                parseBigDecimal(output.prdyCtrt()),
-                parseLong(output.acmlVol()),
-                parseBigDecimal(output.stckHgpr()),
-                parseBigDecimal(output.stckLwpr()),
-                parseBigDecimal(output.stckOprc())
+                output.stkNm() != null ? output.stkNm() : "",
+                parseAbsoluteBigDecimal(output.curPrc()),
+                parseBigDecimal(output.predPre()),
+                parseBigDecimal(output.fluRt()),
+                parseLong(output.trdeQty()),
+                BigDecimal.ZERO,   // ka10095 응답에 고가 없음
+                BigDecimal.ZERO,   // ka10095 응답에 저가 없음
+                BigDecimal.ZERO    // ka10095 응답에 시가 없음
         );
+    }
+
+    /**
+     * 키움 API는 가격 필드에 부호 접두사를 붙이는 경우가 있음 (예: "-20800").
+     * 현재가, 매입가, 평가금액 등 절댓값이 필요한 필드에 사용.
+     */
+    private BigDecimal parseAbsoluteBigDecimal(String value) {
+        return parseBigDecimal(value).abs();
     }
 
     private BigDecimal parseBigDecimal(String value) {

@@ -17,12 +17,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestClient;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import org.springframework.util.LinkedMultiValueMap;
-
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -73,7 +73,7 @@ class KiwoomApiClientTest {
             when(account.getId()).thenReturn(1L);
 
             BrokerTokenResponse cachedToken = new BrokerTokenResponse(
-                    "cached-token", "Bearer", LocalDateTime.now().plusHours(12));
+                    "cached-token", "bearer", LocalDateTime.now().plusHours(12));
             when(tokenCache.getToken(1L)).thenReturn(cachedToken);
 
             BrokerTokenResponse result = kiwoomApiClient.authenticate(account);
@@ -83,7 +83,7 @@ class KiwoomApiClientTest {
         }
 
         @Test
-        @DisplayName("캐시 미스 시 키움 API 호출하여 토큰 발급 (form-urlencoded)")
+        @DisplayName("캐시 미스 시 키움 API 호출 (JSON body, appkey/secretkey 파라미터)")
         void authenticateWithApiCall() {
             Account account = mock(Account.class);
             when(account.getId()).thenReturn(1L);
@@ -94,11 +94,12 @@ class KiwoomApiClientTest {
             when(aesEncryptionUtil.decrypt("encrypted-appkey")).thenReturn("plain-appkey");
             when(aesEncryptionUtil.decrypt("encrypted-secret")).thenReturn("plain-secret");
             when(brokerProperties.getKiwoom()).thenReturn(kiwoomProperties);
-            when(kiwoomProperties.getBaseUrl()).thenReturn("https://openapi.kiwoom.com");
+            when(kiwoomProperties.getBaseUrl()).thenReturn("https://api.kiwoom.com");
             when(kiwoomProperties.getTokenPath()).thenReturn("/oauth2/token");
 
+            // expires_dt: "yyyyMMddHHmmss" 형식
             KiwoomTokenApiResponse apiResponse = new KiwoomTokenApiResponse(
-                    "new-access-token", "Bearer", 86400);
+                    "new-access-token", "bearer", "20261231235959", 0, "정상");
 
             RestClient.RequestBodyUriSpec postSpec = mock(RestClient.RequestBodyUriSpec.class);
             RestClient.RequestBodySpec bodySpec = mock(RestClient.RequestBodySpec.class);
@@ -107,20 +108,21 @@ class KiwoomApiClientTest {
             when(brokerRestClient.post()).thenReturn(postSpec);
             when(postSpec.uri(anyString())).thenReturn(bodySpec);
             when(bodySpec.contentType(any())).thenReturn(bodySpec);
-            when(bodySpec.body(any(LinkedMultiValueMap.class))).thenReturn(bodySpec);
+            when(bodySpec.body(any(KiwoomTokenRequest.class))).thenReturn(bodySpec);
             when(bodySpec.retrieve()).thenReturn(responseSpec);
             when(responseSpec.body(KiwoomTokenApiResponse.class)).thenReturn(apiResponse);
 
             BrokerTokenResponse result = kiwoomApiClient.authenticate(account);
 
             assertThat(result.accessToken()).isEqualTo("new-access-token");
-            assertThat(result.tokenType()).isEqualTo("Bearer");
+            assertThat(result.tokenType()).isEqualTo("bearer");
+            assertThat(result.expiresAt()).isEqualTo(LocalDateTime.of(2026, 12, 31, 23, 59, 59));
             verify(tokenCache).putToken(eq(1L), any(BrokerTokenResponse.class));
         }
 
         @Test
-        @DisplayName("API 응답이 null이면 BROKER_AUTH_FAILED 예외")
-        void authenticateNullResponse() {
+        @DisplayName("return_code != 0 이면 BROKER_AUTH_FAILED 예외")
+        void authenticateReturnCodeError() {
             Account account = mock(Account.class);
             when(account.getId()).thenReturn(1L);
             when(account.getAppKey()).thenReturn("encrypted-appkey");
@@ -130,8 +132,11 @@ class KiwoomApiClientTest {
             when(aesEncryptionUtil.decrypt("encrypted-appkey")).thenReturn("plain-appkey");
             when(aesEncryptionUtil.decrypt("encrypted-secret")).thenReturn("plain-secret");
             when(brokerProperties.getKiwoom()).thenReturn(kiwoomProperties);
-            when(kiwoomProperties.getBaseUrl()).thenReturn("https://openapi.kiwoom.com");
+            when(kiwoomProperties.getBaseUrl()).thenReturn("https://api.kiwoom.com");
             when(kiwoomProperties.getTokenPath()).thenReturn("/oauth2/token");
+
+            KiwoomTokenApiResponse errorResponse = new KiwoomTokenApiResponse(
+                    null, null, null, -1, "인증 오류");
 
             RestClient.RequestBodyUriSpec postSpec = mock(RestClient.RequestBodyUriSpec.class);
             RestClient.RequestBodySpec bodySpec = mock(RestClient.RequestBodySpec.class);
@@ -140,9 +145,9 @@ class KiwoomApiClientTest {
             when(brokerRestClient.post()).thenReturn(postSpec);
             when(postSpec.uri(anyString())).thenReturn(bodySpec);
             when(bodySpec.contentType(any())).thenReturn(bodySpec);
-            when(bodySpec.body(any(LinkedMultiValueMap.class))).thenReturn(bodySpec);
+            when(bodySpec.body(any(KiwoomTokenRequest.class))).thenReturn(bodySpec);
             when(bodySpec.retrieve()).thenReturn(responseSpec);
-            when(responseSpec.body(KiwoomTokenApiResponse.class)).thenReturn(null);
+            when(responseSpec.body(KiwoomTokenApiResponse.class)).thenReturn(errorResponse);
 
             assertThatThrownBy(() -> kiwoomApiClient.authenticate(account))
                     .isInstanceOf(BusinessException.class)
@@ -162,7 +167,7 @@ class KiwoomApiClientTest {
             when(aesEncryptionUtil.decrypt("encrypted-appkey")).thenReturn("plain-appkey");
             when(aesEncryptionUtil.decrypt("encrypted-secret")).thenReturn("plain-secret");
             when(brokerProperties.getKiwoom()).thenReturn(kiwoomProperties);
-            when(kiwoomProperties.getBaseUrl()).thenReturn("https://openapi.kiwoom.com");
+            when(kiwoomProperties.getBaseUrl()).thenReturn("https://api.kiwoom.com");
             when(kiwoomProperties.getTokenPath()).thenReturn("/oauth2/token");
             when(brokerRestClient.post()).thenThrow(new RuntimeException("Connection refused"));
 
@@ -178,47 +183,49 @@ class KiwoomApiClientTest {
     class GetBalanceTests {
 
         @Test
-        @DisplayName("정상 잔고 조회 - 보유종목 매핑 및 현재가 0 처리")
+        @DisplayName("정상 잔고 조회 - api-id: kt00018, A-prefix 제거, 현재가 포함")
         void getBalanceSuccess() {
             Account account = mock(Account.class);
             when(account.getId()).thenReturn(1L);
-            when(account.getAppKey()).thenReturn("encrypted-appkey");
-            when(account.getSecretKey()).thenReturn("encrypted-secret");
             when(account.getAccountNumber()).thenReturn("50123456-01");
             when(account.getBrokerType()).thenReturn(BrokerType.KIWOOM);
 
-            when(aesEncryptionUtil.decrypt("encrypted-appkey")).thenReturn("plain-appkey");
-            when(aesEncryptionUtil.decrypt("encrypted-secret")).thenReturn("plain-secret");
             when(brokerProperties.getKiwoom()).thenReturn(kiwoomProperties);
-            when(kiwoomProperties.getBaseUrl()).thenReturn("https://openapi.kiwoom.com");
+            when(kiwoomProperties.getBaseUrl()).thenReturn("https://api.kiwoom.com");
             when(kiwoomProperties.getBalancePath()).thenReturn("/api/dostk/acnt");
 
             KiwoomBalanceItem item = new KiwoomBalanceItem(
-                    "005930", "삼성전자", "100", "72000.00",
-                    "7550000", "350000", "4.86");
-            KiwoomBalanceSummary summary = new KiwoomBalanceSummary("15230000", "5000000");
+                    "A005930", "삼성전자", "75500", "100", "100",
+                    "72000", "7200000", "7550000", "350000", "4.86");
             KiwoomBalanceApiResponse apiResponse = new KiwoomBalanceApiResponse(
-                    "0", "정상", "", List.of(item), List.of(summary));
+                    "14500000", "15230000", "730000", "5.03", List.of(item));
 
-            RestClient.RequestHeadersUriSpec getSpec = mock(RestClient.RequestHeadersUriSpec.class);
-            RestClient.RequestHeadersSpec headersSpec = mock(RestClient.RequestHeadersSpec.class);
+            RestClient.RequestBodyUriSpec postSpec = mock(RestClient.RequestBodyUriSpec.class);
+            RestClient.RequestBodySpec bodySpec = mock(RestClient.RequestBodySpec.class);
             RestClient.ResponseSpec responseSpec = mock(RestClient.ResponseSpec.class);
 
-            when(brokerRestClient.get()).thenReturn(getSpec);
-            when(getSpec.uri(anyString(), any(java.util.function.Function.class))).thenReturn(headersSpec);
-            when(headersSpec.header(anyString(), anyString())).thenReturn(headersSpec);
-            when(headersSpec.retrieve()).thenReturn(responseSpec);
-            when(responseSpec.body(KiwoomBalanceApiResponse.class)).thenReturn(apiResponse);
+            HttpHeaders headers = new HttpHeaders();
+            // cont-yn 없음 → 단일 페이지
+            ResponseEntity<KiwoomBalanceApiResponse> responseEntity =
+                    ResponseEntity.ok().headers(headers).body(apiResponse);
+
+            when(brokerRestClient.post()).thenReturn(postSpec);
+            when(postSpec.uri(anyString())).thenReturn(bodySpec);
+            when(bodySpec.contentType(any())).thenReturn(bodySpec);
+            when(bodySpec.header(anyString(), anyString())).thenReturn(bodySpec);
+            when(bodySpec.body(any(KiwoomBalanceRequest.class))).thenReturn(bodySpec);
+            when(bodySpec.retrieve()).thenReturn(responseSpec);
+            when(responseSpec.toEntity(KiwoomBalanceApiResponse.class)).thenReturn(responseEntity);
 
             BalanceResponse result = kiwoomApiClient.getBalance(account, "access-token");
 
             assertThat(result.holdings()).hasSize(1);
-            assertThat(result.holdings().getFirst().stockCode()).isEqualTo("005930");
+            assertThat(result.holdings().getFirst().stockCode()).isEqualTo("005930"); // A-prefix 제거
             assertThat(result.holdings().getFirst().stockName()).isEqualTo("삼성전자");
             assertThat(result.holdings().getFirst().quantity()).isEqualTo(100L);
-            // 키움 잔고에는 현재가 없으므로 0
-            assertThat(result.holdings().getFirst().currentPrice()).isEqualByComparingTo(BigDecimal.ZERO);
+            assertThat(result.holdings().getFirst().currentPrice()).isEqualByComparingTo(new BigDecimal("75500"));
             assertThat(result.totalEvaluationAmount()).isEqualByComparingTo(new BigDecimal("15230000"));
+            assertThat(result.totalPurchaseAmount()).isEqualByComparingTo(new BigDecimal("14500000"));
         }
 
         @Test
@@ -226,35 +233,34 @@ class KiwoomApiClientTest {
         void getBalanceFiltersZeroQuantity() {
             Account account = mock(Account.class);
             when(account.getId()).thenReturn(1L);
-            when(account.getAppKey()).thenReturn("encrypted-appkey");
-            when(account.getSecretKey()).thenReturn("encrypted-secret");
             when(account.getAccountNumber()).thenReturn("50123456-01");
             when(account.getBrokerType()).thenReturn(BrokerType.KIWOOM);
 
-            when(aesEncryptionUtil.decrypt("encrypted-appkey")).thenReturn("plain-appkey");
-            when(aesEncryptionUtil.decrypt("encrypted-secret")).thenReturn("plain-secret");
             when(brokerProperties.getKiwoom()).thenReturn(kiwoomProperties);
-            when(kiwoomProperties.getBaseUrl()).thenReturn("https://openapi.kiwoom.com");
+            when(kiwoomProperties.getBaseUrl()).thenReturn("https://api.kiwoom.com");
             when(kiwoomProperties.getBalancePath()).thenReturn("/api/dostk/acnt");
 
             KiwoomBalanceItem zeroItem = new KiwoomBalanceItem(
-                    "000660", "SK하이닉스", "0", "150000.00",
-                    "0", "0", "0");
+                    "A000660", "SK하이닉스", "150000", "0", "0",
+                    "150000", "0", "0", "0", "0");
             KiwoomBalanceApiResponse apiResponse = new KiwoomBalanceApiResponse(
-                    "0", "정상", "", List.of(zeroItem), List.of());
+                    "0", "0", "0", "0", List.of(zeroItem));
 
-            RestClient.RequestHeadersUriSpec getSpec = mock(RestClient.RequestHeadersUriSpec.class);
-            RestClient.RequestHeadersSpec headersSpec = mock(RestClient.RequestHeadersSpec.class);
+            RestClient.RequestBodyUriSpec postSpec = mock(RestClient.RequestBodyUriSpec.class);
+            RestClient.RequestBodySpec bodySpec = mock(RestClient.RequestBodySpec.class);
             RestClient.ResponseSpec responseSpec = mock(RestClient.ResponseSpec.class);
+            ResponseEntity<KiwoomBalanceApiResponse> responseEntity =
+                    ResponseEntity.ok().body(apiResponse);
 
-            when(brokerRestClient.get()).thenReturn(getSpec);
-            when(getSpec.uri(anyString(), any(java.util.function.Function.class))).thenReturn(headersSpec);
-            when(headersSpec.header(anyString(), anyString())).thenReturn(headersSpec);
-            when(headersSpec.retrieve()).thenReturn(responseSpec);
-            when(responseSpec.body(KiwoomBalanceApiResponse.class)).thenReturn(apiResponse);
+            when(brokerRestClient.post()).thenReturn(postSpec);
+            when(postSpec.uri(anyString())).thenReturn(bodySpec);
+            when(bodySpec.contentType(any())).thenReturn(bodySpec);
+            when(bodySpec.header(anyString(), anyString())).thenReturn(bodySpec);
+            when(bodySpec.body(any(KiwoomBalanceRequest.class))).thenReturn(bodySpec);
+            when(bodySpec.retrieve()).thenReturn(responseSpec);
+            when(responseSpec.toEntity(KiwoomBalanceApiResponse.class)).thenReturn(responseEntity);
 
             BalanceResponse result = kiwoomApiClient.getBalance(account, "access-token");
-
             assertThat(result.holdings()).isEmpty();
         }
 
@@ -262,25 +268,24 @@ class KiwoomApiClientTest {
         @DisplayName("API 응답이 null이면 BROKER_API_ERROR 예외")
         void getBalanceNullResponse() {
             Account account = mock(Account.class);
-            when(account.getAppKey()).thenReturn("encrypted-appkey");
-            when(account.getSecretKey()).thenReturn("encrypted-secret");
-            when(account.getAccountNumber()).thenReturn("50123456-01");
 
-            when(aesEncryptionUtil.decrypt("encrypted-appkey")).thenReturn("plain-appkey");
-            when(aesEncryptionUtil.decrypt("encrypted-secret")).thenReturn("plain-secret");
             when(brokerProperties.getKiwoom()).thenReturn(kiwoomProperties);
-            when(kiwoomProperties.getBaseUrl()).thenReturn("https://openapi.kiwoom.com");
+            when(kiwoomProperties.getBaseUrl()).thenReturn("https://api.kiwoom.com");
             when(kiwoomProperties.getBalancePath()).thenReturn("/api/dostk/acnt");
 
-            RestClient.RequestHeadersUriSpec getSpec = mock(RestClient.RequestHeadersUriSpec.class);
-            RestClient.RequestHeadersSpec headersSpec = mock(RestClient.RequestHeadersSpec.class);
+            RestClient.RequestBodyUriSpec postSpec = mock(RestClient.RequestBodyUriSpec.class);
+            RestClient.RequestBodySpec bodySpec = mock(RestClient.RequestBodySpec.class);
             RestClient.ResponseSpec responseSpec = mock(RestClient.ResponseSpec.class);
+            ResponseEntity<KiwoomBalanceApiResponse> responseEntity =
+                    ResponseEntity.ok().body(null);
 
-            when(brokerRestClient.get()).thenReturn(getSpec);
-            when(getSpec.uri(anyString(), any(java.util.function.Function.class))).thenReturn(headersSpec);
-            when(headersSpec.header(anyString(), anyString())).thenReturn(headersSpec);
-            when(headersSpec.retrieve()).thenReturn(responseSpec);
-            when(responseSpec.body(KiwoomBalanceApiResponse.class)).thenReturn(null);
+            when(brokerRestClient.post()).thenReturn(postSpec);
+            when(postSpec.uri(anyString())).thenReturn(bodySpec);
+            when(bodySpec.contentType(any())).thenReturn(bodySpec);
+            when(bodySpec.header(anyString(), anyString())).thenReturn(bodySpec);
+            when(bodySpec.body(any(KiwoomBalanceRequest.class))).thenReturn(bodySpec);
+            when(bodySpec.retrieve()).thenReturn(responseSpec);
+            when(responseSpec.toEntity(KiwoomBalanceApiResponse.class)).thenReturn(responseEntity);
 
             assertThatThrownBy(() -> kiwoomApiClient.getBalance(account, "access-token"))
                     .isInstanceOf(BusinessException.class)
@@ -294,36 +299,34 @@ class KiwoomApiClientTest {
     class GetCurrentPriceTests {
 
         @Test
-        @DisplayName("정상 시세 조회")
+        @DisplayName("정상 시세 조회 - api-id: ka10095, A-prefix 자동 추가")
         void getCurrentPriceSuccess() {
             Account account = mock(Account.class);
-            when(account.getAppKey()).thenReturn("encrypted-appkey");
-            when(account.getSecretKey()).thenReturn("encrypted-secret");
 
-            when(aesEncryptionUtil.decrypt("encrypted-appkey")).thenReturn("plain-appkey");
-            when(aesEncryptionUtil.decrypt("encrypted-secret")).thenReturn("plain-secret");
             when(brokerProperties.getKiwoom()).thenReturn(kiwoomProperties);
-            when(kiwoomProperties.getBaseUrl()).thenReturn("https://openapi.kiwoom.com");
-            when(kiwoomProperties.getPricePath()).thenReturn("/api/dostk/mrkt");
+            when(kiwoomProperties.getBaseUrl()).thenReturn("https://api.kiwoom.com");
+            when(kiwoomProperties.getPricePath()).thenReturn("/api/dostk/stkinfo");
 
             KiwoomPriceOutput output = new KiwoomPriceOutput(
-                    "005930", "삼성전자", "75500", "1500", "2.03",
-                    "12345678", "76000", "74000", "74500");
-            KiwoomPriceApiResponse apiResponse = new KiwoomPriceApiResponse("0", "정상", "", output);
+                    "A005930", "삼성전자", "75500", "1500", "2", "2.03", "12345678",
+                    "75600", "75400");
+            KiwoomPriceApiResponse apiResponse = new KiwoomPriceApiResponse(List.of(output));
 
-            RestClient.RequestHeadersUriSpec getSpec = mock(RestClient.RequestHeadersUriSpec.class);
-            RestClient.RequestHeadersSpec headersSpec = mock(RestClient.RequestHeadersSpec.class);
+            RestClient.RequestBodyUriSpec postSpec = mock(RestClient.RequestBodyUriSpec.class);
+            RestClient.RequestBodySpec bodySpec = mock(RestClient.RequestBodySpec.class);
             RestClient.ResponseSpec responseSpec = mock(RestClient.ResponseSpec.class);
 
-            when(brokerRestClient.get()).thenReturn(getSpec);
-            when(getSpec.uri(anyString(), any(java.util.function.Function.class))).thenReturn(headersSpec);
-            when(headersSpec.header(anyString(), anyString())).thenReturn(headersSpec);
-            when(headersSpec.retrieve()).thenReturn(responseSpec);
+            when(brokerRestClient.post()).thenReturn(postSpec);
+            when(postSpec.uri(anyString())).thenReturn(bodySpec);
+            when(bodySpec.contentType(any())).thenReturn(bodySpec);
+            when(bodySpec.header(anyString(), anyString())).thenReturn(bodySpec);
+            when(bodySpec.body(any(KiwoomPriceRequest.class))).thenReturn(bodySpec);
+            when(bodySpec.retrieve()).thenReturn(responseSpec);
             when(responseSpec.body(KiwoomPriceApiResponse.class)).thenReturn(apiResponse);
 
             StockPriceResponse result = kiwoomApiClient.getCurrentPrice(account, "access-token", "005930");
 
-            assertThat(result.stockCode()).isEqualTo("005930");
+            assertThat(result.stockCode()).isEqualTo("005930"); // 원래 stockCode 유지
             assertThat(result.stockName()).isEqualTo("삼성전자");
             assertThat(result.currentPrice()).isEqualByComparingTo(new BigDecimal("75500"));
             assertThat(result.changePrice()).isEqualByComparingTo(new BigDecimal("1500"));
@@ -332,26 +335,24 @@ class KiwoomApiClientTest {
         }
 
         @Test
-        @DisplayName("API 응답이 null이면 BROKER_API_ERROR 예외")
-        void getCurrentPriceNullResponse() {
+        @DisplayName("응답 목록이 비어있으면 BROKER_API_ERROR 예외")
+        void getCurrentPriceEmptyResponse() {
             Account account = mock(Account.class);
-            when(account.getAppKey()).thenReturn("encrypted-appkey");
-            when(account.getSecretKey()).thenReturn("encrypted-secret");
 
-            when(aesEncryptionUtil.decrypt("encrypted-appkey")).thenReturn("plain-appkey");
-            when(aesEncryptionUtil.decrypt("encrypted-secret")).thenReturn("plain-secret");
             when(brokerProperties.getKiwoom()).thenReturn(kiwoomProperties);
-            when(kiwoomProperties.getBaseUrl()).thenReturn("https://openapi.kiwoom.com");
-            when(kiwoomProperties.getPricePath()).thenReturn("/api/dostk/mrkt");
+            when(kiwoomProperties.getBaseUrl()).thenReturn("https://api.kiwoom.com");
+            when(kiwoomProperties.getPricePath()).thenReturn("/api/dostk/stkinfo");
 
-            RestClient.RequestHeadersUriSpec getSpec = mock(RestClient.RequestHeadersUriSpec.class);
-            RestClient.RequestHeadersSpec headersSpec = mock(RestClient.RequestHeadersSpec.class);
+            RestClient.RequestBodyUriSpec postSpec = mock(RestClient.RequestBodyUriSpec.class);
+            RestClient.RequestBodySpec bodySpec = mock(RestClient.RequestBodySpec.class);
             RestClient.ResponseSpec responseSpec = mock(RestClient.ResponseSpec.class);
 
-            when(brokerRestClient.get()).thenReturn(getSpec);
-            when(getSpec.uri(anyString(), any(java.util.function.Function.class))).thenReturn(headersSpec);
-            when(headersSpec.header(anyString(), anyString())).thenReturn(headersSpec);
-            when(headersSpec.retrieve()).thenReturn(responseSpec);
+            when(brokerRestClient.post()).thenReturn(postSpec);
+            when(postSpec.uri(anyString())).thenReturn(bodySpec);
+            when(bodySpec.contentType(any())).thenReturn(bodySpec);
+            when(bodySpec.header(anyString(), anyString())).thenReturn(bodySpec);
+            when(bodySpec.body(any(KiwoomPriceRequest.class))).thenReturn(bodySpec);
+            when(bodySpec.retrieve()).thenReturn(responseSpec);
             when(responseSpec.body(KiwoomPriceApiResponse.class)).thenReturn(null);
 
             assertThatThrownBy(() -> kiwoomApiClient.getCurrentPrice(account, "token", "005930"))
@@ -364,15 +365,11 @@ class KiwoomApiClientTest {
         @DisplayName("API 호출 중 예외 발생 시 BROKER_API_ERROR 예외")
         void getCurrentPriceApiException() {
             Account account = mock(Account.class);
-            when(account.getAppKey()).thenReturn("encrypted-appkey");
-            when(account.getSecretKey()).thenReturn("encrypted-secret");
 
-            when(aesEncryptionUtil.decrypt("encrypted-appkey")).thenReturn("plain-appkey");
-            when(aesEncryptionUtil.decrypt("encrypted-secret")).thenReturn("plain-secret");
             when(brokerProperties.getKiwoom()).thenReturn(kiwoomProperties);
-            when(kiwoomProperties.getBaseUrl()).thenReturn("https://openapi.kiwoom.com");
-            when(kiwoomProperties.getPricePath()).thenReturn("/api/dostk/mrkt");
-            when(brokerRestClient.get()).thenThrow(new RuntimeException("Timeout"));
+            when(kiwoomProperties.getBaseUrl()).thenReturn("https://api.kiwoom.com");
+            when(kiwoomProperties.getPricePath()).thenReturn("/api/dostk/stkinfo");
+            when(brokerRestClient.post()).thenThrow(new RuntimeException("Timeout"));
 
             assertThatThrownBy(() -> kiwoomApiClient.getCurrentPrice(account, "token", "005930"))
                     .isInstanceOf(BusinessException.class)

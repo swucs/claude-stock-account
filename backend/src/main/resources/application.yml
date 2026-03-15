@@ -39,10 +39,10 @@ broker:
     balance-path: /uapi/domestic-stock/v1/trading/inquire-balance
     price-path: /uapi/domestic-stock/v1/quotations/inquire-price
   kiwoom:
-    base-url: https://openapi.kiwoom.com
+    base-url: https://api.kiwoom.com
     token-path: /oauth2/token
     balance-path: /api/dostk/acnt
-    price-path: /api/dostk/mrkt
+    price-path: /api/dostk/stkinfo
   ls:
     base-url: https://openapi.ls-sec.co.kr
     token-path: /oauth2/token

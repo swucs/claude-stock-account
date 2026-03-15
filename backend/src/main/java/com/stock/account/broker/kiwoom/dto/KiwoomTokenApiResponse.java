@@ -3,8 +3,10 @@ package com.stock.account.broker.kiwoom.dto;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public record KiwoomTokenApiResponse(
-        @JsonProperty("access_token") String accessToken,
+        @JsonProperty("token") String token,
         @JsonProperty("token_type") String tokenType,
-        @JsonProperty("expires_in") long expiresIn
+        @JsonProperty("expires_dt") String expiresDt,   // "yyyyMMddHHmmss" 형식
+        @JsonProperty("return_code") Integer returnCode,
+        @JsonProperty("return_msg") String returnMsg
 ) {
 }

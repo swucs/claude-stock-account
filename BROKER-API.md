@@ -155,105 +155,119 @@
 
 ### Base URL
 ```
-https://openapi.kiwoom.com
+https://api.kiwoom.com
 ```
 
 ### 공통 요청 헤더
 | 헤더 | 값 |
 |------|-----|
 | `Authorization` | `Bearer {access_token}` |
-| `appkey` | 앱 키 |
-| `appsecret` | 앱 시크릿 |
-| `tr_id` | 각 API별 거래 ID |
+| `api-id` | 각 API별 고유 ID (KIS의 tr_id에 해당) |
+| `cont-yn` | 연속조회여부 (`""` 최초 / `"Y"` 연속) |
+| `next-key` | 연속조회키 (응답에서 수신한 값) |
 
-### 2-1. 인증 (토큰 발급)
+### 2-1. 인증 (토큰 발급) — au10001
 | 항목 | 내용 |
 |------|------|
 | **URL** | `POST /oauth2/token` |
-| **Content-Type** | `application/x-www-form-urlencoded` |
+| **Content-Type** | `application/json;charset=UTF-8` |
 
-**Request Parameters**
-
-| 파라미터 | 설명 |
-|----------|------|
-| `grant_type` | `client_credentials` |
-| `appkey` | 앱 키 |
-| `appsecret` | 앱 시크릿 |
-
-**Response**
+**Request Body**
 ```json
 {
-  "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9...",  // 접근토큰 → accessToken
-  "token_type": "Bearer",                                       // 토큰타입 → tokenType
-  "expires_in": 86400                                            // 만료시간(초) → expiresIn
+  "grant_type": "client_credentials",
+  "appkey": "{앱키}",
+  "secretkey": "{시크릿키}"
 }
 ```
 
-### 2-2. 잔고 조회
+**Response**
+```json
+{
+  "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9...",  // 접근토큰 → token
+  "token_type": "bearer",                               // 토큰타입
+  "expires_dt": "20261231235959",                       // 만료일시 (yyyyMMddHHmmss) → expiresAt
+  "return_code": 0,                                     // 0: 정상
+  "return_msg": "정상"
+}
+```
+
+### 2-2. 잔고 조회 — kt00018 (계좌평가잔고내역요청)
 | 항목 | 내용 |
 |------|------|
-| **URL** | `GET /api/dostk/acnt` (주식 계좌 잔고) |
-| **tr_id** | `TTTC8434R` |
+| **URL** | `POST /api/dostk/acnt` |
+| **api-id** | `kt00018` |
 
-**Query Parameters**
+> 계좌번호를 별도로 전달하지 않음 — 토큰 자체에 계좌 컨텍스트 내포
 
-| 파라미터 | 설명 |
-|----------|------|
-| `CANO` | 계좌번호 앞 8자리 |
-| `ACNT_PRDT_CD` | 계좌상품코드 뒤 2자리 |
-| `AFHR_FLPR_YN` | 시간외단일가여부 |
-| `PRCS_DVSN` | 처리구분 (`"00"`: 전일매매포함) |
+**Request Body**
+```json
+{
+  "qry_tp": "2",        // "1":합산, "2":개별
+  "dmst_stex_tp": "KRX" // "KRX":한국거래소, "NXT":넥스트트레이드
+}
+```
 
 **Response**
 ```json
 {
-  "output1": [
+  "tot_pur_amt": "14500000",           // 총매입금액 → totalPurchase
+  "tot_evlt_amt": "15230000",          // 총평가금액 → totalEvaluation
+  "tot_evlt_pl": "730000",             // 총평가손익 → totalProfitLoss
+  "tot_prft_rt": "5.03",               // 총수익률(%)
+  "acnt_evlt_remn_indv_tot": [         // 계좌평가잔고 개별 목록
     {
-      "pdno": "005930",                // 종목코드 → stockCode
-      "prdt_name": "삼성전자",          // 종목명 → stockName
-      "hldg_qty": "100",              // 보유수량 → quantity
-      "pchs_avg_pric": "72000.00",    // 매입평균가격 → avgPurchasePrice
-      "evlu_amt": "7550000",          // 평가금액 → evaluation
-      "evlu_pfls_amt": "350000",      // 평가손익금액 → profitLoss
-      "evlu_pfls_rt": "4.86"          // 평가손익률 → profitRate
-    }
-  ],
-  "output2": [
-    {
-      "tot_evlu_amt": "15230000",      // 총평가금액 → totalEvaluation
-      "dnca_tot_amt": "5000000"        // 예수금총금액
+      "stk_cd": "A005930",             // 종목번호 (A-prefix 포함) → stockCode (A 제거)
+      "stk_nm": "삼성전자",             // 종목명 → stockName
+      "cur_prc": "75500",              // 현재가 → currentPrice (부호 접두사 가능)
+      "rmnd_qty": "100",               // 잔고수량 → quantity
+      "trde_able_qty": "100",          // 매매가능수량
+      "pur_pric": "72000",             // 매입가 → avgPurchasePrice
+      "pur_amt": "7200000",            // 매입금액
+      "evlt_amt": "7550000",           // 평가금액 → evaluation
+      "evltv_prft": "350000",          // 평가손익 → profitLoss
+      "prft_rt": "4.86"               // 수익률(%) → profitRate
     }
   ]
 }
 ```
 
-### 2-3. 실시간 시세 (REST → SSE 변환)
+**연속조회 흐름**
+> 응답 헤더 `cont-yn: Y`이면 다음 요청 시 요청 헤더 `cont-yn: Y`, `next-key: {응답 헤더값}`을 설정하여 반복 호출.
+
+### 2-3. 현재가 조회 (REST → SSE 변환) — ka10095 (관심종목정보요청)
 | 항목 | 내용 |
 |------|------|
-| **URL** | `GET /api/dostk/mrkt` (주식 현재가) |
-| **tr_id** | `FHKST01010100` |
+| **URL** | `POST /api/dostk/stkinfo` |
+| **api-id** | `ka10095` |
 
-**Query Parameters**
-
-| 파라미터 | 설명 |
-|----------|------|
-| `FID_COND_MRKT_DIV_CODE` | 시장구분 (`"J"`: 주식) |
-| `FID_INPUT_ISCD` | 종목코드 |
+**Request Body**
+```json
+{
+  "stk_cd": "A005930"   // 종목코드 (A-prefix 포함, 여러 개는 | 구분)
+}
+```
 
 **Response**
 ```json
 {
-  "output": {
-    "stck_prpr": "75500",      // 현재가 → currentPrice
-    "prdy_vrss": "1500",       // 전일대비 → changePrice
-    "prdy_ctrt": "2.03",       // 전일대비율 → changeRate
-    "acml_vol": "12345678",    // 누적거래량 → volume
-    "stck_hgpr": "76000",      // 고가 → high
-    "stck_lwpr": "74000",      // 저가 → low
-    "stck_oprc": "74500"       // 시가 → open
-  }
+  "atn_stk_infr": [
+    {
+      "stk_cd": "A005930",   // 종목코드 → stockCode
+      "stk_nm": "삼성전자",   // 종목명 → stockName
+      "cur_prc": "75500",    // 현재가 → currentPrice
+      "pred_pre": "1500",    // 전일대비 → changePrice
+      "pred_pre_sig": "2",   // 전일대비기호 (1:상한, 2:상승, 3:보합, 4:하한, 5:하락)
+      "flu_rt": "2.03",      // 등락율(%) → changeRate
+      "trde_qty": "12345678",// 거래량 → volume
+      "sel_bid": "75600",    // 매도호가
+      "buy_bid": "75500"     // 매수호가
+    }
+  ]
 }
 ```
+
+> 고가/저가/시가는 ka10095에 없음 → `high`, `low`, `open` = 0으로 설정
 
 ---
 
@@ -379,25 +393,25 @@ https://openapi.kiwoom.com
 ## 증권사별 API 비교 요약
 
 ### 인증 방식
-| 증권사 | 토큰 발급 URL | 인증 방식 | 토큰 유효기간 |
-|--------|-------------|-----------|-------------|
-| KIS | `POST /oauth2/tokenP` | OAuth2 (appkey + appsecret) | 24시간 |
-| 키움 | `POST /oauth2/token` | OAuth2 (appkey + appsecret) | 문서 확인 필요 |
-| LS | `POST /oauth2/token` | OAuth2 (appkey + appsecretkey + scope) | 문서 확인 필요 |
+| 증권사 | 토큰 발급 URL | Content-Type | 인증 방식 | 만료 방식 |
+|--------|-------------|-------------|-----------|----------|
+| KIS | `POST /oauth2/tokenP` | JSON | appkey + appsecret | `expires_in`(초) |
+| 키움 | `POST /oauth2/token` | JSON | appkey + **secretkey** | `expires_dt`(yyyyMMddHHmmss) |
+| LS | `POST /oauth2/token` | form-urlencoded | appkey + appsecretkey + scope | `expires_in`(초) |
 
 ### 잔고 조회
-| 증권사 | URL | 메서드 | TR ID |
-|--------|-----|--------|-------|
-| KIS | `/uapi/domestic-stock/v1/trading/inquire-balance` | `GET` | `TTTC8434R` |
-| 키움 | `/api/dostk/acnt` | `GET` | `TTTC8434R` |
-| LS | `/stock/accno` | `POST` | `t0424` |
+| 증권사 | URL | 메서드 | API ID | 계좌번호 전달 |
+|--------|-----|--------|--------|------------|
+| KIS | `/uapi/domestic-stock/v1/trading/inquire-balance` | `GET` | `TTTC8434R` (tr_id 헤더) | 쿼리 파라미터 CANO/ACNT_PRDT_CD |
+| 키움 | `/api/dostk/acnt` | `POST` | `kt00018` (api-id 헤더) | 불필요 (토큰에 내포) |
+| LS | `/stock/accno` | `POST` | `t0424` (tr_cd 헤더) | Request Body |
 
-### 실시간 시세 (REST → SSE 변환용)
-| 증권사 | URL | 메서드 | TR ID |
-|--------|-----|--------|-------|
-| KIS | `/uapi/domestic-stock/v1/quotations/inquire-price` | `GET` | `FHKST01010100` |
-| 키움 | `/api/dostk/mrkt` | `GET` | `FHKST01010100` |
-| LS | `/stock/market-data` | `POST` | `t1102` |
+### 현재가 조회 (REST polling → SSE)
+| 증권사 | URL | 메서드 | API ID |
+|--------|-----|--------|--------|
+| KIS | `/uapi/domestic-stock/v1/quotations/inquire-price` | `GET` | `FHKST01010100` (tr_id) |
+| 키움 | `/api/dostk/stkinfo` | `POST` | `ka10095` (api-id) |
+| LS | `/stock/market-data` | `POST` | `t1102` (tr_cd) |
 
 ---
 
@@ -406,23 +420,26 @@ https://openapi.kiwoom.com
 ### BalanceResponse (잔고)
 | 공통 필드 | KIS | 키움 | LS |
 |-----------|-----|------|-----|
-| `stockCode` | `pdno` | `pdno` | `expcode` |
-| `stockName` | `prdt_name` | `prdt_name` | `jangname` |
-| `quantity` | `hldg_qty` | `hldg_qty` | `janqty` |
-| `avgPurchasePrice` | `pchs_avg_pric` | `pchs_avg_pric` | `pamt` |
-| `currentPrice` | `prpr` | — (별도 조회) | `mamt` |
-| `evaluation` | `evlu_amt` | `evlu_amt` | `appamt` |
-| `profitLoss` | `evlu_pfls_amt` | `evlu_pfls_amt` | `dtsunik` |
-| `profitRate` | `evlu_pfls_rt` | `evlu_pfls_rt` | `sunikrt` |
+| `stockCode` | `output1[].pdno` | `acnt_evlt_remn_indv_tot[].stk_cd` (A prefix 제거) | `t0424OutBlock1[].expcode` |
+| `stockName` | `output1[].prdt_name` | `stk_nm` | `jangname` |
+| `quantity` | `output1[].hldg_qty` | `rmnd_qty` | `janqty` |
+| `avgPurchasePrice` | `output1[].pchs_avg_pric` | `pur_pric` | `pamt` |
+| `currentPrice` | `output1[].prpr` | `cur_prc` (잔고에 포함) | `mamt` |
+| `evaluation` | `output1[].evlu_amt` | `evlt_amt` | `appamt` |
+| `profitLoss` | `output1[].evlu_pfls_amt` | `evltv_prft` | `dtsunik` |
+| `profitRate` | `output1[].evlu_pfls_rt` | `prft_rt` | `sunikrt` |
+| `totalEvaluation` | `output2[].tot_evlu_amt` | `tot_evlt_amt` | `t0424OutBlock.mamt` |
+| `totalPurchase` | `output2[].pchs_amt_smtl_amt` | `tot_pur_amt` | — |
+| `totalProfitLoss` | `output2[].evlu_pfls_smtl_amt` | `tot_evlt_pl` | `t0424OutBlock.dtsunik` |
 
 
 ### PriceResponse (시세)
 | 공통 필드 | KIS | 키움 | LS |
 |-----------|-----|------|-----|
-| `currentPrice` | `stck_prpr` | `stck_prpr` | `price` |
-| `changePrice` | `prdy_vrss` | `prdy_vrss` | `change` |
-| `changeRate` | `prdy_ctrt` | `prdy_ctrt` | `diff` |
-| `volume` | `acml_vol` | `acml_vol` | `volume` |
-| `high` | `stck_hgpr` | `stck_hgpr` | `high` |
-| `low` | `stck_lwpr` | `stck_lwpr` | `low` |
-| `open` | `stck_oprc` | `stck_oprc` | `open` |
+| `currentPrice` | `output.stck_prpr` | `atn_stk_infr[].cur_prc` | `t1102OutBlock.price` |
+| `changePrice` | `output.prdy_vrss` | `pred_pre` | `change` |
+| `changeRate` | `output.prdy_ctrt` | `flu_rt` | `diff` |
+| `volume` | `output.acml_vol` | `trde_qty` | `volume` |
+| `high` | `output.stck_hgpr` | — (0) | `high` |
+| `low` | `output.stck_lwpr` | — (0) | `low` |
+| `open` | `output.stck_oprc` | — (0) | `open` |
