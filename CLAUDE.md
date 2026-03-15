@@ -109,7 +109,8 @@ stock-account/
 - 암호화: `AesEncryptionUtil` (AES-256-GCM, SHA-256으로 키 변환, 랜덤 IV)
 - 마스킹: `MaskingUtil.maskKey()`, `MaskingUtil.maskAccountNumber()`
 - 증권사별 구현은 Strategy 패턴 또는 별도 패키지로 분리
-- 테스트: JUnit 5 + Mockito, 통합 테스트 시 @SpringBootTest, 테스트 DB는 H2 인메모리
+- 테스트: JUnit 5, 통합 테스트 시 @SpringBootTest, 테스트 DB는 H2 인메모리
+- **Service 테스트는 Mocking 하지 않고 `@SpringBootTest` + `@Transactional`로 실제 DB 연동 테스트를 작성한다.** (UserServiceTest, AccountServiceTest 패턴 참고)
 - REST API 경로: `/api/v1/...`
 - 설정 파일: `application.yml` (profile 분리: local, dev, prod)
 
