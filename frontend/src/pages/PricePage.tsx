@@ -11,6 +11,7 @@ export default function PricePage() {
   const [selectedBroker, setSelectedBroker] = useState<BrokerType | ''>('');
   const [selectedAccountId, setSelectedAccountId] = useState<number | null>(null);
   const [stockCodes, setStockCodes] = useState<string[]>([]);
+  const [stockNameMap, setStockNameMap] = useState<Record<string, string>>({});
   const [prices, setPrices] = useState<Map<string, StockPriceResponse>>(new Map());
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected');
   const [error, setError] = useState<string | null>(null);
@@ -32,7 +33,12 @@ export default function PricePage() {
       const result = await balanceService.getBalance(selectedAccountId);
       if (result.success && result.data) {
         const codes = result.data.holdings.map((h) => h.stockCode);
+        const nameMap: Record<string, string> = {};
+        result.data.holdings.forEach((h) => {
+          nameMap[h.stockCode] = h.stockName;
+        });
         setStockCodes(codes);
+        setStockNameMap(nameMap);
       }
     } catch {
       setError('보유종목 조회에 실패했습니다.');
@@ -44,6 +50,7 @@ export default function PricePage() {
       loadStockCodes();
     } else {
       setStockCodes([]);
+      setStockNameMap({});
       setPrices(new Map());
     }
   }, [selectedAccountId, loadStockCodes]);
@@ -135,6 +142,7 @@ export default function PricePage() {
     setSelectedAccountId(null);
     stopStream();
     setPrices(new Map());
+    setStockNameMap({});
     fetchAccounts(broker || undefined);
   };
 
@@ -142,6 +150,7 @@ export default function PricePage() {
     setSelectedAccountId(accountId);
     stopStream();
     setPrices(new Map());
+    setStockNameMap({});
   };
 
   const formatNumber = (num: number) => num.toLocaleString('ko-KR');
@@ -298,7 +307,7 @@ export default function PricePage() {
             {Array.from(prices.values()).map((p) => (
               <tr key={p.stockCode} style={{ borderBottom: '1px solid #eee' }}>
                 <td style={{ padding: '12px', fontFamily: 'monospace' }}>{p.stockCode}</td>
-                <td style={{ padding: '12px', fontWeight: 'bold' }}>{p.stockName}</td>
+                <td style={{ padding: '12px', fontWeight: 'bold' }}>{p.stockName || stockNameMap[p.stockCode] || ''}</td>
                 <td style={{ padding: '12px', textAlign: 'right', fontWeight: 'bold' }}>
                   {formatNumber(p.currentPrice)}
                 </td>
