@@ -2,7 +2,10 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAccountStore } from '../store/accountStore';
 import { balanceService } from '../services/balanceService';
 import { priceService } from '../services/priceService';
+import { useSortable } from '../hooks/useSortable';
 import type { BrokerType, StockPriceResponse } from '../types';
+
+type PriceSortKey = 'stockCode' | 'stockName' | 'currentPrice' | 'changePrice' | 'changeRate' | 'volume' | 'openPrice' | 'highPrice' | 'lowPrice';
 
 type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
 
@@ -153,8 +156,27 @@ export default function PricePage() {
     setStockNameMap({});
   };
 
+  const priceList = Array.from(prices.values()).map((p) => ({
+    ...p,
+    stockName: p.stockName || stockNameMap[p.stockCode] || '',
+  }));
+
+  const { sortedData: sortedPrices, handleSort, getSortIndicator } =
+    useSortable<Record<string, unknown>, PriceSortKey>(
+      priceList as unknown as Record<string, unknown>[],
+      'stockCode',
+    );
+
   const formatNumber = (num: number) => num.toLocaleString('ko-KR');
   const formatRate = (rate: number) => `${rate >= 0 ? '+' : ''}${rate.toFixed(2)}%`;
+
+  const thStyle = (align: 'left' | 'right' = 'left') => ({
+    padding: '12px',
+    textAlign: align as const,
+    cursor: 'pointer',
+    userSelect: 'none' as const,
+    whiteSpace: 'nowrap' as const,
+  });
 
   const statusColor: Record<ConnectionStatus, string> = {
     disconnected: '#999',
@@ -292,22 +314,22 @@ export default function PricePage() {
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ borderBottom: '2px solid #e0e0e0' }}>
-              <th style={{ padding: '12px', textAlign: 'left' }}>종목코드</th>
-              <th style={{ padding: '12px', textAlign: 'left' }}>종목명</th>
-              <th style={{ padding: '12px', textAlign: 'right' }}>현재가</th>
-              <th style={{ padding: '12px', textAlign: 'right' }}>전일대비</th>
-              <th style={{ padding: '12px', textAlign: 'right' }}>등락률</th>
-              <th style={{ padding: '12px', textAlign: 'right' }}>거래량</th>
-              <th style={{ padding: '12px', textAlign: 'right' }}>시가</th>
-              <th style={{ padding: '12px', textAlign: 'right' }}>고가</th>
-              <th style={{ padding: '12px', textAlign: 'right' }}>저가</th>
+              <th style={thStyle('left')} onClick={() => handleSort('stockCode')}>종목코드{getSortIndicator('stockCode')}</th>
+              <th style={thStyle('left')} onClick={() => handleSort('stockName')}>종목명{getSortIndicator('stockName')}</th>
+              <th style={thStyle('right')} onClick={() => handleSort('currentPrice')}>현재가{getSortIndicator('currentPrice')}</th>
+              <th style={thStyle('right')} onClick={() => handleSort('changePrice')}>전일대비{getSortIndicator('changePrice')}</th>
+              <th style={thStyle('right')} onClick={() => handleSort('changeRate')}>등락률{getSortIndicator('changeRate')}</th>
+              <th style={thStyle('right')} onClick={() => handleSort('volume')}>거래량{getSortIndicator('volume')}</th>
+              <th style={thStyle('right')} onClick={() => handleSort('openPrice')}>시가{getSortIndicator('openPrice')}</th>
+              <th style={thStyle('right')} onClick={() => handleSort('highPrice')}>고가{getSortIndicator('highPrice')}</th>
+              <th style={thStyle('right')} onClick={() => handleSort('lowPrice')}>저가{getSortIndicator('lowPrice')}</th>
             </tr>
           </thead>
           <tbody>
-            {Array.from(prices.values()).map((p) => (
+            {sortedPrices.map((p: any) => (
               <tr key={p.stockCode} style={{ borderBottom: '1px solid #eee' }}>
                 <td style={{ padding: '12px', fontFamily: 'monospace' }}>{p.stockCode}</td>
-                <td style={{ padding: '12px', fontWeight: 'bold' }}>{p.stockName || stockNameMap[p.stockCode] || ''}</td>
+                <td style={{ padding: '12px', fontWeight: 'bold' }}>{p.stockName}</td>
                 <td style={{ padding: '12px', textAlign: 'right', fontWeight: 'bold' }}>
                   {formatNumber(p.currentPrice)}
                 </td>

@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useAccountStore } from '../store/accountStore';
 import { accountService } from '../services/accountService';
+import { useSortable } from '../hooks/useSortable';
 import type { BrokerType, AccountCreateRequest, AccountUpdateRequest, Account } from '../types';
+
+type AccountSortKey = 'brokerName' | 'accountName' | 'accountNumber';
 
 export default function AccountsPage() {
   const { accounts, brokers, loading, error, fetchAccounts, fetchBrokers, clearError } = useAccountStore();
@@ -102,6 +105,20 @@ export default function AccountsPage() {
       // 삭제 실패
     }
   };
+
+  const { sortedData: sortedAccounts, handleSort, getSortIndicator } =
+    useSortable<Record<string, unknown>, AccountSortKey>(
+      accounts as unknown as Record<string, unknown>[],
+      'brokerName',
+    );
+
+  const thStyle = (align: 'left' | 'center' = 'left') => ({
+    padding: '12px',
+    textAlign: align as const,
+    cursor: align === 'center' ? 'default' : 'pointer',
+    userSelect: 'none' as const,
+    whiteSpace: 'nowrap' as const,
+  });
 
   const inputStyle = {
     padding: '8px 12px',
@@ -314,16 +331,16 @@ export default function AccountsPage() {
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ borderBottom: '2px solid #e0e0e0' }}>
-              <th style={{ padding: '12px', textAlign: 'left' }}>증권사</th>
-              <th style={{ padding: '12px', textAlign: 'left' }}>계좌명</th>
-              <th style={{ padding: '12px', textAlign: 'left' }}>계좌번호</th>
+              <th style={thStyle('left')} onClick={() => handleSort('brokerName')}>증권사{getSortIndicator('brokerName')}</th>
+              <th style={thStyle('left')} onClick={() => handleSort('accountName')}>계좌명{getSortIndicator('accountName')}</th>
+              <th style={thStyle('left')} onClick={() => handleSort('accountNumber')}>계좌번호{getSortIndicator('accountNumber')}</th>
               <th style={{ padding: '12px', textAlign: 'left' }}>App Key</th>
               <th style={{ padding: '12px', textAlign: 'left' }}>Secret Key</th>
               <th style={{ padding: '12px', textAlign: 'center' }}>관리</th>
             </tr>
           </thead>
           <tbody>
-            {accounts.map((account) => (
+            {sortedAccounts.map((account: any) => (
               <tr key={account.id} style={{ borderBottom: '1px solid #eee' }}>
                 <td style={{ padding: '12px' }}>
                   <span style={{

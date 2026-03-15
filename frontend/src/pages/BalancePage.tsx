@@ -1,7 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAccountStore } from '../store/accountStore';
 import { balanceService } from '../services/balanceService';
+import { useSortable } from '../hooks/useSortable';
 import type { BrokerType, BalanceResponse } from '../types';
+
+type HoldingSortKey = 'stockCode' | 'stockName' | 'quantity' | 'avgPurchasePrice' | 'currentPrice' | 'evaluationAmount' | 'profitLossAmount' | 'profitLossRate';
 
 export default function BalancePage() {
   const { accounts, brokers, fetchAccounts, fetchBrokers } = useAccountStore();
@@ -70,8 +73,22 @@ export default function BalancePage() {
     fetchAccounts(broker || undefined);
   };
 
+  const { sortedData: sortedHoldings, handleSort, getSortIndicator } =
+    useSortable<Record<string, unknown>, HoldingSortKey>(
+      (balance?.holdings ?? []) as unknown as Record<string, unknown>[],
+      'stockCode',
+    );
+
   const formatNumber = (num: number) => num.toLocaleString('ko-KR');
   const formatRate = (rate: number) => `${rate >= 0 ? '+' : ''}${rate.toFixed(2)}%`;
+
+  const thStyle = (align: 'left' | 'right' = 'left') => ({
+    padding: '12px',
+    textAlign: align as const,
+    cursor: 'pointer',
+    userSelect: 'none' as const,
+    whiteSpace: 'nowrap' as const,
+  });
 
   const cardStyle = {
     padding: '16px 20px',
@@ -219,18 +236,18 @@ export default function BalancePage() {
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ borderBottom: '2px solid #e0e0e0' }}>
-                  <th style={{ padding: '12px', textAlign: 'left' }}>종목코드</th>
-                  <th style={{ padding: '12px', textAlign: 'left' }}>종목명</th>
-                  <th style={{ padding: '12px', textAlign: 'right' }}>수량</th>
-                  <th style={{ padding: '12px', textAlign: 'right' }}>평균매입가</th>
-                  <th style={{ padding: '12px', textAlign: 'right' }}>현재가</th>
-                  <th style={{ padding: '12px', textAlign: 'right' }}>평가금액</th>
-                  <th style={{ padding: '12px', textAlign: 'right' }}>손익금액</th>
-                  <th style={{ padding: '12px', textAlign: 'right' }}>수익률</th>
+                  <th style={thStyle('left')} onClick={() => handleSort('stockCode')}>종목코드{getSortIndicator('stockCode')}</th>
+                  <th style={thStyle('left')} onClick={() => handleSort('stockName')}>종목명{getSortIndicator('stockName')}</th>
+                  <th style={thStyle('right')} onClick={() => handleSort('quantity')}>수량{getSortIndicator('quantity')}</th>
+                  <th style={thStyle('right')} onClick={() => handleSort('avgPurchasePrice')}>평균매입가{getSortIndicator('avgPurchasePrice')}</th>
+                  <th style={thStyle('right')} onClick={() => handleSort('currentPrice')}>현재가{getSortIndicator('currentPrice')}</th>
+                  <th style={thStyle('right')} onClick={() => handleSort('evaluationAmount')}>평가금액{getSortIndicator('evaluationAmount')}</th>
+                  <th style={thStyle('right')} onClick={() => handleSort('profitLossAmount')}>손익금액{getSortIndicator('profitLossAmount')}</th>
+                  <th style={thStyle('right')} onClick={() => handleSort('profitLossRate')}>수익률{getSortIndicator('profitLossRate')}</th>
                 </tr>
               </thead>
               <tbody>
-                {balance.holdings.map((h) => (
+                {sortedHoldings.map((h: any) => (
                   <tr key={h.stockCode} style={{ borderBottom: '1px solid #eee' }}>
                     <td style={{ padding: '12px', fontFamily: 'monospace' }}>{h.stockCode}</td>
                     <td style={{ padding: '12px', fontWeight: 'bold' }}>{h.stockName}</td>
