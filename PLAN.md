@@ -42,16 +42,16 @@
 - [x] **React 화면**: 계좌 관리 페이지 (등록 폼, 목록, 수정/삭제)
 - [x] **테스트**: 단위 테스트 + 통합 테스트 (TDD, 소유권 검증 포함)
 
-## Phase 3: 한국투자증권 (KIS) 연동
+## Phase 3: 한국투자증권 (KIS) 연동 ✅ (2026-03-15 완료)
 > 상세 API 스펙: [BROKER-API.md](BROKER-API.md) 섹션 1 참조
 - [x] **인증**: `POST /oauth2/tokenP` — OAuth2 토큰 발급/갱신 (24시간 유효)
 - [x] **토큰 영속화**: BrokerToken 엔티티 + 2-Layer 캐시(메모리+DB) — 서버 재시작 시 토큰 재사용 (KIS 하루 1회 발급 권고 대응)
   - `@Transactional(propagation = REQUIRES_NEW)` — readOnly 트랜잭션 충돌 해결
 - [x] **잔고 조회**: `GET /uapi/.../inquire-balance` (tr_id: `TTTC8434R`, 실전투자) → 응답 매핑 → 화면 (30초 자동 갱신)
-- [ ] **실시간 시세**: `GET /uapi/.../inquire-price` (tr_id: `FHKST01010100`) → SseEmitter 스트리밍
-- [x] **React 화면**: 증권사 탭 필터 → 계좌 선택 → 잔고 조회 (탭 UI로 개선)
+- [x] **실시간 시세**: `GET /uapi/.../inquire-price` (tr_id: `FHKST01010100`) → SseEmitter 스트리밍 (3초 간격 polling)
+- [x] **React 화면**: 증권사 탭 필터 → 계좌 선택 → 잔고 조회 / 실시간 시세 (탭 UI 통일)
 - [x] **자동 갱신**: 잔고 조회 30초 polling (useEffect + Axios, 갱신 ON/OFF 토글)
-- [ ] **테스트**: Mock API 기반 단위 테스트, WireMock 통합 테스트
+- [x] **테스트**: KisApiClient 8개, BalanceService 4개, PriceService 5개 단위 테스트
 
 ## Phase 4: 키움 연동
 > 상세 API 스펙: [BROKER-API.md](BROKER-API.md) 섹션 2 참조

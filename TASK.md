@@ -53,17 +53,18 @@
 - [x] 단위 테스트 (Service, 암호화, 마스킹, 소유권 검증)
 - [x] 통합 테스트 (Controller, Repository)
 
-## Phase 3: 한국투자증권 (KIS)
+## Phase 3: 한국투자증권 (KIS) ✅ (2026-03-15 완료)
 - [x] KIS API 문서 분석 및 정리
 - [x] BrokerApiClient 인터페이스 정의
 - [x] KisApiClient 구현 (인증) — 실전투자 URL/tr_id 적용
 - [x] KIS 토큰 DB 영속화 (BrokerToken 엔티티 + 2-Layer 캐시: 메모리+DB, AES-256-GCM 암호화 저장)
   - REQUIRES_NEW 전파로 readOnly 트랜잭션 충돌 해결
 - [x] KisApiClient 구현 (잔고 조회 + 30초 자동 갱신 API)
-- [ ] KisApiClient 구현 (실시간 시세 - SSE / SseEmitter)
-- [x] 조회 화면 구현 (React: 증권사 탭 필터 → 계좌 선택 → 조회)
+- [x] KisApiClient 구현 (실시간 시세 - SSE / SseEmitter, 3초 간격 polling)
+- [x] 조회 화면 구현 (React: 증권사 탭 필터 → 계좌 선택 → 잔고/시세 조회)
 - [x] 잔고 조회 30초 자동 갱신 구현 (useEffect + Axios polling, ON/OFF 토글)
-- [ ] KIS 관련 테스트 작성 (자동 갱신 포함)
+- [x] KIS 관련 테스트 작성 (KisApiClient 8개, BalanceService 4개, PriceService 5개)
+- [x] Service 인터페이스/구현체 분리 (service/impl 패키지)
 
 ## Phase 4: 키움
 - [ ] 키움 API 문서 분석 및 정리
@@ -87,3 +88,4 @@
 - [x] Phase 0: 프로젝트 초기 설정 (2026-03-14)
 - [x] Phase 1: 사용자 인증 — JWT 기반 (2026-03-15)
 - [x] Phase 2: 계좌 및 인증정보 관리 — CRUD + 암호화 + 마스킹 (2026-03-15)
+- [x] Phase 3: 한국투자증권(KIS) 연동 — 인증/잔고/시세/SSE/테스트 (2026-03-15)
