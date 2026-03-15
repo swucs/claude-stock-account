@@ -53,12 +53,13 @@
 - [x] **자동 갱신**: 잔고 조회 30초 polling (useEffect + Axios, 갱신 ON/OFF 토글)
 - [x] **테스트**: KisApiClient 8개, BalanceService 4개, PriceService 5개 단위 테스트
 
-## Phase 4: 키움 연동
+## Phase 4: 키움 연동 ✅ (2026-03-15 완료)
 > 상세 API 스펙: [BROKER-API.md](BROKER-API.md) 섹션 2 참조
-- [ ] **인증**: `POST /oauth2/token` — OAuth2 토큰 발급
-- [ ] **잔고 조회**: `GET /api/dostk/acnt` (tr_id: `TTTC8434R`) → 응답 매핑
-- [ ] **실시간 시세**: `GET /api/dostk/mrkt` (tr_id: `FHKST01010100`) → SseEmitter 스트리밍
-- [ ] 테스트 작성
+- [x] **인증**: `POST /oauth2/token` — OAuth2 토큰 발급 (application/x-www-form-urlencoded)
+- [x] **토큰 영속화**: KiwoomTokenCache (2-Layer 캐시: 메모리+DB, BrokerType.KIWOOM)
+- [x] **잔고 조회**: `GET /api/dostk/acnt` (tr_id: `TTTC8434R`) → 응답 매핑
+- [x] **실시간 시세**: `GET /api/dostk/mrkt` (tr_id: `FHKST01010100`) → getCurrentPrice()
+- [x] 테스트 작성 (KiwoomApiClientTest 11개)
 
 ## Phase 5: LS증권 연동
 > 상세 API 스펙: [BROKER-API.md](BROKER-API.md) 섹션 3 참조

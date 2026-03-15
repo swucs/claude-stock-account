@@ -41,8 +41,8 @@ broker:
   kiwoom:
     base-url: https://openapi.kiwoom.com
     token-path: /oauth2/token
-    balance-path: /api/dostk/acntbal
-    price-path: /api/dostk/stkcur
+    balance-path: /api/dostk/acnt
+    price-path: /api/dostk/mrkt
   ls:
     base-url: https://openapi.ls-sec.co.kr
     token-path: /oauth2/token

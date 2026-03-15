@@ -66,11 +66,12 @@
 - [x] KIS 관련 테스트 작성 (KisApiClient 8개, BalanceService 4개, PriceService 5개)
 - [x] Service 인터페이스/구현체 분리 (service/impl 패키지)
 
-## Phase 4: 키움
-- [ ] 키움 API 문서 분석 및 정리
-- [ ] KiwoomApiClient 구현 (인증)
-- [ ] KiwoomApiClient 구현 (잔고(30초 갱신)/실시간시세)
-- [ ] 키움 관련 테스트 작성
+## Phase 4: 키움 ✅ (2026-03-15 완료)
+- [x] 키움 API 문서 분석 및 정리
+- [x] KiwoomApiClient 구현 (인증 — form-urlencoded OAuth2)
+- [x] KiwoomTokenCache 구현 (2-Layer 캐시: 메모리+DB, BrokerType.KIWOOM)
+- [x] KiwoomApiClient 구현 (잔고 조회 / 실시간 시세)
+- [x] 키움 관련 테스트 작성 (KiwoomApiClientTest 11개)
 
 ## Phase 5: LS증권
 - [ ] LS API 문서 분석 및 정리
