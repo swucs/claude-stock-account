@@ -1,7 +1,9 @@
 package com.stock.account.broker.kiwoom.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public record KiwoomBalanceItem(
         @JsonProperty("stk_cd") String stkCd,           // 종목번호 (예: "A005930")
         @JsonProperty("stk_nm") String stkNm,           // 종목명
